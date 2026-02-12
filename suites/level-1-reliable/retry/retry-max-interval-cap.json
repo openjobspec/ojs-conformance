@@ -5,18 +5,28 @@
   "name": "retry-max-interval-cap",
   "description": "When the computed backoff interval exceeds max_interval, the retry delay MUST be capped at max_interval. With initial_interval=PT1S, backoff_coefficient=10.0, and max_interval=PT2S, the second retry delay MUST NOT exceed 2s.",
   "spec_ref": "ojs-retry#section-3",
-  "tags": ["level-1", "retry", "max-interval", "backoff-cap"],
+  "tags": [
+    "level-1",
+    "retry",
+    "max-interval",
+    "backoff-cap"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.max-interval-cap",
-        "args": [{"action": "always_fail"}],
+        "args": [
+          {
+            "action": "always_fail"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -41,12 +51,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-max-interval-1"
       },
       "assertions": {
@@ -60,6 +73,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -85,12 +99,15 @@
       "id": "step-4",
       "delay_ms": 1200,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-max-interval-1"
       },
       "assertions": {
@@ -104,6 +121,7 @@
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -129,12 +147,15 @@
       "id": "step-6",
       "delay_ms": 2500,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-max-interval-1"
       },
       "assertions": {
@@ -148,6 +169,7 @@
     {
       "id": "step-7",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"

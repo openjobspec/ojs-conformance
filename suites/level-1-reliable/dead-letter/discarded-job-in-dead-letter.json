@@ -5,18 +5,27 @@
   "name": "discarded-job-in-dead-letter",
   "description": "When a job exhausts all retry attempts with on_exhaustion='dead_letter', the job MUST appear in the dead letter queue listing. The DLQ entry MUST contain the full job payload, error history, and metadata.",
   "spec_ref": "ojs-core#section-6.1",
-  "tags": ["level-1", "dead-letter", "exhaustion"],
+  "tags": [
+    "level-1",
+    "dead-letter",
+    "exhaustion"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "dlq.test.discarded-in-dlq",
-        "args": [{"action": "always_fail"}],
+        "args": [
+          {
+            "action": "always_fail"
+          }
+        ],
         "options": {
           "queue": "dlq-test",
           "retry_policy": {
@@ -41,12 +50,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["dlq-test"],
+        "queues": [
+          "dlq-test"
+        ],
         "worker_id": "worker-dlq-discard-1"
       },
       "assertions": {
@@ -60,6 +72,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -83,6 +96,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "list-dead-letter",
       "path": "/ojs/v1/dead-letter",
       "headers": {
         "Accept": "application/openjobspec+json"

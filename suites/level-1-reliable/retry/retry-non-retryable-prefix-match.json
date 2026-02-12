@@ -5,18 +5,28 @@
   "name": "retry-non-retryable-prefix-match",
   "description": "A job with non_retryable_errors=['Auth.*'] MUST match error types using pattern matching. Failing with 'AuthenticationError' MUST result in immediate discard without retries.",
   "spec_ref": "ojs-retry#section-6",
-  "tags": ["level-1", "retry", "non-retryable", "pattern-match"],
+  "tags": [
+    "level-1",
+    "retry",
+    "non-retryable",
+    "pattern-match"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.non-retryable-prefix",
-        "args": [{"action": "fail_with_auth_error"}],
+        "args": [
+          {
+            "action": "fail_with_auth_error"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -25,7 +35,9 @@
             "backoff_coefficient": 2.0,
             "max_interval": "PT5M",
             "jitter": false,
-            "non_retryable_errors": ["Auth.*"],
+            "non_retryable_errors": [
+              "Auth.*"
+            ],
             "on_exhaustion": "discard"
           }
         }
@@ -42,12 +54,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-prefix-match-1"
       },
       "assertions": {
@@ -61,6 +76,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -84,6 +100,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

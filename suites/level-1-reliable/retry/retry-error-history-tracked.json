@@ -5,18 +5,27 @@
   "name": "retry-error-history-tracked",
   "description": "When a job fails multiple times with different error types, the system MUST preserve the complete error history. Each error entry MUST include the error type, message, and the attempt number at which it occurred.",
   "spec_ref": "ojs-retry#section-10",
-  "tags": ["level-1", "retry", "error-history"],
+  "tags": [
+    "level-1",
+    "retry",
+    "error-history"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.error-history",
-        "args": [{"action": "fail_with_different_errors"}],
+        "args": [
+          {
+            "action": "fail_with_different_errors"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -41,12 +50,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-error-history-1"
       },
       "assertions": {
@@ -60,6 +72,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -83,12 +96,15 @@
       "id": "step-4",
       "delay_ms": 1200,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-error-history-1"
       },
       "assertions": {
@@ -102,6 +118,7 @@
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -125,12 +142,15 @@
       "id": "step-6",
       "delay_ms": 1200,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-error-history-1"
       },
       "assertions": {
@@ -144,6 +164,7 @@
     {
       "id": "step-7",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -166,6 +187,7 @@
     {
       "id": "step-8",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

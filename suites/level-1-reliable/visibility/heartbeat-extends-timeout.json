@@ -5,18 +5,28 @@
   "name": "heartbeat-extends-timeout",
   "description": "Sending a heartbeat for an active job MUST extend the visibility timeout. A job that would otherwise time out MUST remain in the 'active' state as long as heartbeats are sent within the timeout window. After heartbeats stop, the normal timeout behavior MUST resume.",
   "spec_ref": "ojs-worker-protocol#section-6",
-  "tags": ["level-1", "visibility", "heartbeat", "timeout-extension"],
+  "tags": [
+    "level-1",
+    "visibility",
+    "heartbeat",
+    "timeout-extension"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "visibility.test.heartbeat-extends",
-        "args": [{"action": "long_running_task"}],
+        "args": [
+          {
+            "action": "long_running_task"
+          }
+        ],
         "options": {
           "queue": "visibility-test",
           "visibility_timeout": "PT3S"
@@ -33,12 +43,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["visibility-test"],
+        "queues": [
+          "visibility-test"
+        ],
         "worker_id": "worker-vis-heartbeat-1"
       },
       "assertions": {
@@ -54,6 +67,7 @@
       "description": "Send first heartbeat at 2s (before 3s timeout)",
       "delay_ms": 2000,
       "action": "POST",
+      "intent": "heartbeat",
       "path": "/ojs/v1/workers/heartbeat",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -74,6 +88,7 @@
       "description": "Send second heartbeat at 4s (past original 3s timeout, but extended by first heartbeat)",
       "delay_ms": 2000,
       "action": "POST",
+      "intent": "heartbeat",
       "path": "/ojs/v1/workers/heartbeat",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -94,6 +109,7 @@
       "description": "Verify job is still active at 5s (well past original 3s timeout)",
       "delay_ms": 1000,
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -108,6 +124,7 @@
     {
       "id": "step-6",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"

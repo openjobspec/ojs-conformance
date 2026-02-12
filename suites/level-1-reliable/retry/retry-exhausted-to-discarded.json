@@ -5,18 +5,28 @@
   "name": "retry-exhausted-to-discarded",
   "description": "When all retry attempts are exhausted and on_exhaustion='discard', the job MUST transition to the 'discarded' state. The job MUST NOT appear in the dead letter queue.",
   "spec_ref": "ojs-retry#section-2",
-  "tags": ["level-1", "retry", "exhaustion", "discard"],
+  "tags": [
+    "level-1",
+    "retry",
+    "exhaustion",
+    "discard"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.exhaust-to-discard",
-        "args": [{"action": "always_fail"}],
+        "args": [
+          {
+            "action": "always_fail"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -42,12 +52,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-exhaust-discard-1"
       },
       "assertions": {
@@ -61,6 +74,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -84,6 +98,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

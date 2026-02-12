@@ -5,18 +5,28 @@
   "name": "worker-graceful-shutdown",
   "description": "The server MUST be able to send a 'terminate' directive via the heartbeat response to signal a graceful shutdown. When a worker receives 'terminate', it SHOULD stop processing and release the job. The job MUST return to the 'available' state so another worker can pick it up.",
   "spec_ref": "ojs-worker-protocol#section-7",
-  "tags": ["level-1", "worker", "terminate", "graceful-shutdown"],
+  "tags": [
+    "level-1",
+    "worker",
+    "terminate",
+    "graceful-shutdown"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "worker.test.graceful-shutdown",
-        "args": [{"action": "process_with_terminate"}],
+        "args": [
+          {
+            "action": "process_with_terminate"
+          }
+        ],
         "options": {
           "queue": "worker-test",
           "visibility_timeout": "PT30S",
@@ -36,12 +46,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["worker-test"],
+        "queues": [
+          "worker-test"
+        ],
         "worker_id": "worker-terminate-1"
       },
       "assertions": {
@@ -57,6 +70,7 @@
       "description": "Send heartbeat - server responds with 'terminate' directive",
       "delay_ms": 500,
       "action": "POST",
+      "intent": "heartbeat",
       "path": "/ojs/v1/workers/heartbeat",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -77,6 +91,7 @@
       "id": "step-4",
       "description": "Worker releases the job by NACKing without an error (graceful release)",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -100,6 +115,7 @@
     {
       "id": "step-5",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -115,12 +131,15 @@
       "id": "step-6",
       "description": "Another worker picks up the released job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["worker-test"],
+        "queues": [
+          "worker-test"
+        ],
         "worker_id": "worker-terminate-2"
       },
       "assertions": {
@@ -134,6 +153,7 @@
     {
       "id": "step-7",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"

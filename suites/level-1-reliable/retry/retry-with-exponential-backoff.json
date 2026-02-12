@@ -5,18 +5,27 @@
   "name": "retry-with-exponential-backoff",
   "description": "A job configured with exponential backoff (coefficient=2.0, initial_interval=PT1S) MUST increase retry delays exponentially. After the first failure the retry delay MUST be ~1s, and after the second failure the delay MUST be ~2s.",
   "spec_ref": "ojs-retry#section-3",
-  "tags": ["level-1", "retry", "exponential-backoff"],
+  "tags": [
+    "level-1",
+    "retry",
+    "exponential-backoff"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.exponential-backoff",
-        "args": [{"action": "fail_then_succeed"}],
+        "args": [
+          {
+            "action": "fail_then_succeed"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -42,12 +51,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-exp-backoff-1"
       },
       "assertions": {
@@ -62,6 +74,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -87,12 +100,15 @@
       "description": "Wait ~1s for the first retry interval (initial_interval=PT1S)",
       "delay_ms": 1200,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-exp-backoff-1"
       },
       "assertions": {
@@ -108,6 +124,7 @@
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -133,12 +150,15 @@
       "description": "Wait ~2s for the second retry interval (1s * 2.0 = 2s)",
       "delay_ms": 2500,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-exp-backoff-1"
       },
       "assertions": {

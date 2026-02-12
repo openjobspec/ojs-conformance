@@ -5,18 +5,27 @@
   "name": "retry-attempt-counter-increments",
   "description": "Each time a job fails and is retried, the attempt counter MUST increment by 1. The initial attempt is 0, and after each failure the attempt number MUST reflect the total number of completed attempts.",
   "spec_ref": "ojs-retry#section-10",
-  "tags": ["level-1", "retry", "attempt-counter"],
+  "tags": [
+    "level-1",
+    "retry",
+    "attempt-counter"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.attempt-counter",
-        "args": [{"action": "fail_three_times"}],
+        "args": [
+          {
+            "action": "fail_three_times"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -42,12 +51,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-counter-1"
       },
       "assertions": {
@@ -62,6 +74,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -85,12 +98,15 @@
       "id": "step-4",
       "delay_ms": 1200,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-counter-1"
       },
       "assertions": {
@@ -105,6 +121,7 @@
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -128,12 +145,15 @@
       "id": "step-6",
       "delay_ms": 1200,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-counter-1"
       },
       "assertions": {
@@ -148,6 +168,7 @@
     {
       "id": "step-7",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -170,6 +191,7 @@
     {
       "id": "step-8",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

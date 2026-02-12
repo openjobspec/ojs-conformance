@@ -5,18 +5,28 @@
   "name": "retry-validation-invalid-coefficient",
   "description": "Enqueuing a job with backoff_coefficient=0.5 (less than 1.0) MUST be rejected by the server. The backoff coefficient MUST be >= 1.0. The server MUST return an HTTP 422 (Unprocessable Entity) error.",
   "spec_ref": "ojs-retry#section-11",
-  "tags": ["level-1", "retry", "validation", "negative-test"],
+  "tags": [
+    "level-1",
+    "retry",
+    "validation",
+    "negative-test"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.invalid-coefficient",
-        "args": [{"action": "should_be_rejected"}],
+        "args": [
+          {
+            "action": "should_be_rejected"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {

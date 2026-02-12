@@ -5,18 +5,27 @@
   "name": "retry-non-retryable-error",
   "description": "A job with non_retryable_errors=['FatalError'] MUST be immediately discarded when it fails with error type 'FatalError'. No retry attempts MUST be made.",
   "spec_ref": "ojs-retry#section-6",
-  "tags": ["level-1", "retry", "non-retryable"],
+  "tags": [
+    "level-1",
+    "retry",
+    "non-retryable"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "retry.test.non-retryable",
-        "args": [{"action": "fail_with_fatal"}],
+        "args": [
+          {
+            "action": "fail_with_fatal"
+          }
+        ],
         "options": {
           "queue": "retry-test",
           "retry_policy": {
@@ -25,7 +34,9 @@
             "backoff_coefficient": 2.0,
             "max_interval": "PT5M",
             "jitter": false,
-            "non_retryable_errors": ["FatalError"],
+            "non_retryable_errors": [
+              "FatalError"
+            ],
             "on_exhaustion": "discard"
           }
         }
@@ -42,12 +53,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["retry-test"],
+        "queues": [
+          "retry-test"
+        ],
         "worker_id": "worker-non-retryable-1"
       },
       "assertions": {
@@ -61,6 +75,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -84,6 +99,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

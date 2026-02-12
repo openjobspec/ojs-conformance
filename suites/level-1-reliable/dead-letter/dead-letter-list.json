@@ -5,18 +5,28 @@
   "name": "dead-letter-list",
   "description": "The dead letter queue listing endpoint MUST return all jobs that have been moved to the DLQ. When multiple jobs are discarded with on_exhaustion='dead_letter', all of them MUST appear in the listing.",
   "spec_ref": "ojs-core#section-7",
-  "tags": ["level-1", "dead-letter", "listing"],
+  "tags": [
+    "level-1",
+    "dead-letter",
+    "listing"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "dlq.test.list-first",
-        "args": [{"action": "always_fail", "label": "first"}],
+        "args": [
+          {
+            "action": "always_fail",
+            "label": "first"
+          }
+        ],
         "options": {
           "queue": "dlq-list-test",
           "retry_policy": {
@@ -40,13 +50,19 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "dlq.test.list-second",
-        "args": [{"action": "always_fail", "label": "second"}],
+        "args": [
+          {
+            "action": "always_fail",
+            "label": "second"
+          }
+        ],
         "options": {
           "queue": "dlq-list-test",
           "retry_policy": {
@@ -70,12 +86,15 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["dlq-list-test"],
+        "queues": [
+          "dlq-list-test"
+        ],
         "worker_id": "worker-dlq-list-1"
       },
       "assertions": {
@@ -85,6 +104,7 @@
     {
       "id": "step-4",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -107,12 +127,15 @@
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["dlq-list-test"],
+        "queues": [
+          "dlq-list-test"
+        ],
         "worker_id": "worker-dlq-list-1"
       },
       "assertions": {
@@ -122,6 +145,7 @@
     {
       "id": "step-6",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -144,6 +168,7 @@
     {
       "id": "step-7",
       "action": "GET",
+      "intent": "list-dead-letter",
       "path": "/ojs/v1/dead-letter",
       "headers": {
         "Accept": "application/openjobspec+json"

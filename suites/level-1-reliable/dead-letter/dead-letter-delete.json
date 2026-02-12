@@ -5,18 +5,27 @@
   "name": "dead-letter-delete",
   "description": "A job in the dead letter queue MUST be permanently removable via the DLQ delete endpoint. After deletion, the job MUST NOT appear in the DLQ listing and MUST NOT be retrievable.",
   "spec_ref": "ojs-core#section-7",
-  "tags": ["level-1", "dead-letter", "delete"],
+  "tags": [
+    "level-1",
+    "dead-letter",
+    "delete"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "dlq.test.delete",
-        "args": [{"action": "always_fail"}],
+        "args": [
+          {
+            "action": "always_fail"
+          }
+        ],
         "options": {
           "queue": "dlq-delete-test",
           "retry_policy": {
@@ -41,12 +50,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["dlq-delete-test"],
+        "queues": [
+          "dlq-delete-test"
+        ],
         "worker_id": "worker-dlq-delete-1"
       },
       "assertions": {
@@ -60,6 +72,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -82,6 +95,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "list-dead-letter",
       "path": "/ojs/v1/dead-letter",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -96,6 +110,7 @@
     {
       "id": "step-5",
       "action": "DELETE",
+      "intent": "delete-dead-letter",
       "path": "/ojs/v1/dead-letter/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -111,6 +126,7 @@
     {
       "id": "step-6",
       "action": "GET",
+      "intent": "list-dead-letter",
       "path": "/ojs/v1/dead-letter",
       "headers": {
         "Accept": "application/openjobspec+json"

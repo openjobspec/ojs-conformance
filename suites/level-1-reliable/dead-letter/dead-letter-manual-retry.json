@@ -5,18 +5,27 @@
   "name": "dead-letter-manual-retry",
   "description": "A job in the dead letter queue MUST be retryable via the DLQ retry endpoint. After a manual retry, the job state MUST transition back to 'available' and its attempt counter MUST be reset to 0. The job MUST be fetchable by workers again.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-1", "dead-letter", "manual-retry"],
+  "tags": [
+    "level-1",
+    "dead-letter",
+    "manual-retry"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "dlq.test.manual-retry",
-        "args": [{"action": "fail_then_succeed"}],
+        "args": [
+          {
+            "action": "fail_then_succeed"
+          }
+        ],
         "options": {
           "queue": "dlq-test",
           "retry_policy": {
@@ -41,12 +50,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["dlq-test"],
+        "queues": [
+          "dlq-test"
+        ],
         "worker_id": "worker-dlq-retry-1"
       },
       "assertions": {
@@ -60,6 +72,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -82,6 +95,7 @@
     {
       "id": "step-4",
       "action": "POST",
+      "intent": "retry-dead-letter",
       "path": "/ojs/v1/dead-letter/{{steps.step-1.response.body.job.id}}/retry",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -99,6 +113,7 @@
     {
       "id": "step-5",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -114,12 +129,15 @@
     {
       "id": "step-6",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["dlq-test"],
+        "queues": [
+          "dlq-test"
+        ],
         "worker_id": "worker-dlq-retry-1"
       },
       "assertions": {
@@ -134,6 +152,7 @@
     {
       "id": "step-7",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"

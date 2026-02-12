@@ -5,18 +5,28 @@
   "name": "job-requeued-after-timeout",
   "description": "When a worker fetches a job and neither ACKs nor NACKs it before the visibility timeout expires, the system MUST automatically return the job to the 'available' state. Another worker MUST then be able to fetch and process the job.",
   "spec_ref": "ojs-worker-protocol#section-6",
-  "tags": ["level-1", "visibility", "timeout", "requeue"],
+  "tags": [
+    "level-1",
+    "visibility",
+    "timeout",
+    "requeue"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "visibility.test.timeout-requeue",
-        "args": [{"action": "simulate_abandoned_job"}],
+        "args": [
+          {
+            "action": "simulate_abandoned_job"
+          }
+        ],
         "options": {
           "queue": "visibility-test",
           "visibility_timeout": "PT3S"
@@ -33,12 +43,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["visibility-test"],
+        "queues": [
+          "visibility-test"
+        ],
         "worker_id": "worker-vis-abandoned-1"
       },
       "assertions": {
@@ -52,6 +65,7 @@
     {
       "id": "step-3",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -68,6 +82,7 @@
       "description": "Wait for visibility timeout to expire (3s timeout + 1s buffer)",
       "delay_ms": 4000,
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -82,12 +97,15 @@
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["visibility-test"],
+        "queues": [
+          "visibility-test"
+        ],
         "worker_id": "worker-vis-recovered-1"
       },
       "assertions": {
@@ -101,6 +119,7 @@
     {
       "id": "step-6",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
