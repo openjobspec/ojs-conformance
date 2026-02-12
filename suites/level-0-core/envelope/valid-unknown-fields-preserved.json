@@ -5,18 +5,28 @@
   "name": "valid-unknown-fields-preserved",
   "description": "Enqueue a job with extra unknown fields not defined by the OJS specification. The server MUST accept the job without error and MUST preserve the unknown fields in the response for forward compatibility. Per spec section 5.5 constraint 4: 'Unknown attributes MUST be preserved.'",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-006",
-  "tags": ["level-0", "envelope", "forward-compatibility", "unknown-fields", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "forward-compatibility",
+    "unknown-fields",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "x_custom_field": "custom_value",
         "x_future_spec_attribute": {
           "nested": true,

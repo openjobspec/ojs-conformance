@@ -5,11 +5,19 @@
   "name": "ack-clears-error",
   "description": "PUSH a job with retry enabled, FETCH and FAIL it so it becomes retryable, wait for retry, FETCH again, then ACK. Verify that the error field is cleared upon successful completion and the job transitions to state=completed.",
   "spec_ref": "ojs-core#section-7.3",
-  "tags": ["level-0", "operations", "ack", "error", "retry", "clear"],
+  "tags": [
+    "level-0",
+    "operations",
+    "ack",
+    "error",
+    "retry",
+    "clear"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +25,11 @@
       },
       "body": {
         "type": "test.fail_once",
-        "args": [{"action": "ack-clears-error-test"}],
+        "args": [
+          {
+            "action": "ack-clears-error-test"
+          }
+        ],
         "options": {
           "queue": "conformance-ack-clears-error",
           "retry": {
@@ -31,7 +43,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available"
         }
       }
@@ -39,13 +53,16 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-ack-clears-error"],
+        "queues": [
+          "conformance-ack-clears-error"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -53,13 +70,14 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1
+          "$.jobs[0].attempt": 0
         }
       }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -84,19 +102,23 @@
     {
       "id": "step-4",
       "action": "WAIT",
+      "intent": "wait",
       "duration_ms": 2000,
       "description": "Wait for retry interval to elapse so the job becomes available again."
     },
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-ack-clears-error"],
+        "queues": [
+          "conformance-ack-clears-error"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -104,13 +126,14 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 2
+          "$.jobs[0].attempt": 1
         }
       }
     },
     {
       "id": "step-6",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -133,6 +156,7 @@
     {
       "id": "step-7",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -141,9 +165,13 @@
         "status": 200,
         "body": {
           "$.job.state": "completed",
-          "$.job.error": {"$exists": false},
+          "$.job.error": {
+            "$exists": false
+          },
           "$.job.result.recovered": true,
-          "$.job.completed_at": {"$exists": true}
+          "$.job.completed_at": {
+            "$exists": true
+          }
         }
       }
     }

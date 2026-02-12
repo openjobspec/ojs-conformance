@@ -5,18 +5,27 @@
   "name": "valid-minimal-job",
   "description": "Enqueue a job with only the two required request fields (type, args). Verify the server auto-generates a UUIDv7 id, sets state to 'available', defaults queue to 'default', and populates specversion.",
   "spec_ref": "ojs-core#section-5.1",
-  "tags": ["level-0", "envelope", "required-fields", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "required-fields",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": 201,

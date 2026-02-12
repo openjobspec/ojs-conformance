@@ -3,13 +3,19 @@
   "level": 0,
   "category": "operations",
   "name": "fetch-from-queue",
-  "description": "PUSH a job to the 'default' queue, then FETCH from 'default'. Verify the fetched job has state=active, attempt=1, and started_at is set.",
+  "description": "PUSH a job to the 'default' queue, then FETCH from 'default'. Verify the fetched job has state=active, attempt=0, and started_at is set.",
   "spec_ref": "ojs-core#section-7.2",
-  "tags": ["level-0", "operations", "fetch", "queue"],
+  "tags": [
+    "level-0",
+    "operations",
+    "fetch",
+    "queue"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +23,11 @@
       },
       "body": {
         "type": "test.echo",
-        "args": [{"message": "fetch-from-queue-test"}],
+        "args": [
+          {
+            "message": "fetch-from-queue-test"
+          }
+        ],
         "meta": {
           "trace_id": "test-fetch-from-queue-004"
         }
@@ -25,7 +35,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available"
         }
       }
@@ -33,26 +45,36 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["default"],
+        "queues": [
+          "default"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.jobs": {"$size": {"$gte": 1}},
+          "$.jobs": {
+            "$size": {
+              "$gte": 1
+            }
+          },
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].type": "test.echo",
           "$.jobs[0].queue": "default",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1,
+          "$.jobs[0].attempt": 0,
           "$.jobs[0].args[0].message": "fetch-from-queue-test",
-          "$.jobs[0].started_at": {"$exists": true, "$type": "string"},
+          "$.jobs[0].started_at": {
+            "$exists": true,
+            "$type": "string"
+          },
           "$.jobs[0].meta.trace_id": "test-fetch-from-queue-004"
         }
       }

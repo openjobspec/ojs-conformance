@@ -5,11 +5,18 @@
   "name": "info-readonly",
   "description": "GET a job multiple times and verify the INFO operation is purely read-only with no side effects. The job state, attempt count, and all other fields MUST remain unchanged across repeated reads.",
   "spec_ref": "ojs-core#section-7.7",
-  "tags": ["level-0", "operations", "info", "readonly", "idempotent"],
+  "tags": [
+    "level-0",
+    "operations",
+    "info",
+    "readonly",
+    "idempotent"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +24,11 @@
       },
       "body": {
         "type": "test.noop",
-        "args": [{"action": "info-readonly-test"}],
+        "args": [
+          {
+            "action": "info-readonly-test"
+          }
+        ],
         "meta": {
           "trace_id": "test-info-readonly-020"
         },
@@ -28,7 +39,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available"
         }
       }
@@ -36,6 +49,7 @@
     {
       "id": "step-2",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -50,13 +64,16 @@
           "$.job.attempt": 0,
           "$.job.args[0].action": "info-readonly-test",
           "$.job.meta.trace_id": "test-info-readonly-020",
-          "$.job.created_at": {"$exists": true}
+          "$.job.created_at": {
+            "$exists": true
+          }
         }
       }
     },
     {
       "id": "step-3",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -71,13 +88,16 @@
           "$.job.attempt": 0,
           "$.job.args[0].action": "info-readonly-test",
           "$.job.meta.trace_id": "test-info-readonly-020",
-          "$.job.created_at": {"$exists": true}
+          "$.job.created_at": {
+            "$exists": true
+          }
         }
       }
     },
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -92,13 +112,16 @@
           "$.job.attempt": 0,
           "$.job.args[0].action": "info-readonly-test",
           "$.job.meta.trace_id": "test-info-readonly-020",
-          "$.job.created_at": {"$exists": true}
+          "$.job.created_at": {
+            "$exists": true
+          }
         }
       }
     },
     {
       "id": "step-5",
       "action": "ASSERT",
+      "intent": "assert",
       "description": "Verify all three GET responses are identical, confirming no side effects.",
       "assertions": {
         "equality": {

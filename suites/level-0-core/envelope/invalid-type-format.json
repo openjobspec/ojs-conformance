@@ -5,18 +5,28 @@
   "name": "invalid-type-format",
   "description": "Enqueue jobs with invalid type formats (uppercase letters, spaces, leading digits, empty string). The server MUST reject each request with 400 or 422. The type field must match the pattern ^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$.",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-003",
-  "tags": ["level-0", "envelope", "validation", "negative-test", "type-format"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "validation",
+    "negative-test",
+    "type-format"
+  ],
   "steps": [
     {
       "id": "step-1-uppercase",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "Email.Send",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": "number:range(400,422)",
@@ -30,13 +40,17 @@
     {
       "id": "step-2-spaces",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email send",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": "number:range(400,422)",
@@ -49,13 +63,17 @@
     {
       "id": "step-3-leading-digit",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "1email.send",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": "number:range(400,422)",
@@ -68,13 +86,17 @@
     {
       "id": "step-4-empty-string",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": "number:range(400,422)",
@@ -87,13 +109,17 @@
     {
       "id": "step-5-special-chars",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email@send!",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": "number:range(400,422)",

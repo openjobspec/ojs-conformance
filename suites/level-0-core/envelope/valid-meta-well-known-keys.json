@@ -5,18 +5,28 @@
   "name": "valid-meta-well-known-keys",
   "description": "Enqueue a job with meta containing all well-known keys (trace_id, user_id, tenant_id, correlation_id, tags). The server MUST preserve all meta key-value pairs without modification through the job lifecycle.",
   "spec_ref": "ojs-core#section-5.2",
-  "tags": ["level-0", "envelope", "meta", "well-known-keys", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "meta",
+    "well-known-keys",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "notification.send",
-        "args": ["usr_55555", "Your order has shipped"],
+        "args": [
+          "usr_55555",
+          "Your order has shipped"
+        ],
         "meta": {
           "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
           "span_id": "00f067aa0ba902b7",
@@ -24,7 +34,11 @@
           "tenant_id": "tenant_globex",
           "correlation_id": "corr_order_ship_98765",
           "locale": "en-US",
-          "tags": ["shipping", "notification", "high-priority"]
+          "tags": [
+            "shipping",
+            "notification",
+            "high-priority"
+          ]
         }
       },
       "assertions": {

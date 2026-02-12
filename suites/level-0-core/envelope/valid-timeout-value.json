@@ -5,18 +5,27 @@
   "name": "valid-timeout-value",
   "description": "Enqueue a job with a custom timeout value (60000ms = 60 seconds). Verify the server accepts and preserves the timeout setting in the response.",
   "spec_ref": "ojs-core#section-5.2",
-  "tags": ["level-0", "envelope", "timeout", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "timeout",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "report.generate",
-        "args": [42, "quarterly"],
+        "args": [
+          42,
+          "quarterly"
+        ],
         "options": {
           "timeout_ms": 60000
         }

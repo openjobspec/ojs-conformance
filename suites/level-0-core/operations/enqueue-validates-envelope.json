@@ -5,28 +5,54 @@
   "name": "enqueue-validates-envelope",
   "description": "PUSH an invalid job with the required 'type' field missing. The server MUST reject the request with a 400 or 422 status and return a structured error response indicating the validation failure.",
   "spec_ref": "ojs-core#section-7.1",
-  "tags": ["level-0", "operations", "push", "validation", "error"],
+  "tags": [
+    "level-0",
+    "operations",
+    "push",
+    "validation",
+    "error"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
-        "status": {"$in": [400, 422]},
+        "status": {
+          "$in": [
+            400,
+            422
+          ]
+        },
         "headers": {
           "Content-Type": "application/openjobspec+json"
         },
         "body": {
-          "$.error": {"$exists": true},
-          "$.error.code": {"$in": ["invalid_request", "invalid_payload", "schema_validation"]},
-          "$.error.message": {"$exists": true, "$type": "string"},
+          "$.error": {
+            "$exists": true
+          },
+          "$.error.code": {
+            "$in": [
+              "invalid_request",
+              "invalid_payload",
+              "schema_validation"
+            ]
+          },
+          "$.error.message": {
+            "$exists": true,
+            "$type": "string"
+          },
           "$.error.retryable": false
         }
       }
@@ -34,6 +60,7 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -44,17 +71,34 @@
         "args": []
       },
       "assertions": {
-        "status": {"$in": [400, 422]},
+        "status": {
+          "$in": [
+            400,
+            422
+          ]
+        },
         "body": {
-          "$.error": {"$exists": true},
-          "$.error.code": {"$in": ["invalid_request", "invalid_payload", "schema_validation"]},
-          "$.error.message": {"$exists": true, "$type": "string"}
+          "$.error": {
+            "$exists": true
+          },
+          "$.error.code": {
+            "$in": [
+              "invalid_request",
+              "invalid_payload",
+              "schema_validation"
+            ]
+          },
+          "$.error.message": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -65,11 +109,27 @@
         "args": "not-an-array"
       },
       "assertions": {
-        "status": {"$in": [400, 422]},
+        "status": {
+          "$in": [
+            400,
+            422
+          ]
+        },
         "body": {
-          "$.error": {"$exists": true},
-          "$.error.code": {"$in": ["invalid_request", "invalid_payload", "schema_validation"]},
-          "$.error.message": {"$exists": true, "$type": "string"}
+          "$.error": {
+            "$exists": true
+          },
+          "$.error.code": {
+            "$in": [
+              "invalid_request",
+              "invalid_payload",
+              "schema_validation"
+            ]
+          },
+          "$.error.message": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     }

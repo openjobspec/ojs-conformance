@@ -5,18 +5,27 @@
   "name": "valid-specversion",
   "description": "Enqueue a job and verify the response includes the OJS-Version header set to '1.0.0-rc.1'. The server MUST include the spec version in every response to enable version negotiation and forward compatibility.",
   "spec_ref": "ojs-core#section-5.1",
-  "tags": ["level-0", "envelope", "specversion", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "specversion",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": 201,

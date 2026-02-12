@@ -5,18 +5,28 @@
   "name": "enqueue-sets-available",
   "description": "Enqueuing a job without scheduled_at (immediate job) MUST set its state to 'available'. The response MUST include a UUIDv7 id, attempt 0, created_at timestamp, and enqueued_at timestamp.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "enqueue", "available"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "enqueue",
+    "available"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.immediate",
-        "args": [{"action": "verify_available_state"}],
+        "args": [
+          {
+            "action": "verify_available_state"
+          }
+        ],
         "options": {
           "queue": "default"
         }
@@ -40,6 +50,7 @@
     {
       "id": "step-2",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

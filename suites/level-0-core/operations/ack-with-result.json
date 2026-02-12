@@ -5,11 +5,18 @@
   "name": "ack-with-result",
   "description": "ACK a job with a complex result value, then retrieve the job via INFO. Verify the result is stored and retrievable in the full job envelope.",
   "spec_ref": "ojs-core#section-7.3",
-  "tags": ["level-0", "operations", "ack", "result", "info"],
+  "tags": [
+    "level-0",
+    "operations",
+    "ack",
+    "result",
+    "info"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +24,11 @@
       },
       "body": {
         "type": "test.echo",
-        "args": [{"data": "ack-result-test"}],
+        "args": [
+          {
+            "data": "ack-result-test"
+          }
+        ],
         "options": {
           "queue": "conformance-ack-result-test"
         }
@@ -25,20 +36,25 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true}
+          "$.job.id": {
+            "$exists": true
+          }
         }
       }
     },
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-ack-result-test"],
+        "queues": [
+          "conformance-ack-result-test"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -52,6 +68,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -81,6 +98,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -96,7 +114,9 @@
           "$.job.result.details.created": 10,
           "$.job.result.details.updated": 30,
           "$.job.result.details.skipped": 2,
-          "$.job.completed_at": {"$exists": true}
+          "$.job.completed_at": {
+            "$exists": true
+          }
         }
       }
     }

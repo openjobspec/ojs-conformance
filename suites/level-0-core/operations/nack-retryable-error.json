@@ -5,11 +5,18 @@
   "name": "nack-retryable-error",
   "description": "PUSH a job with max_attempts=3, FETCH it, then FAIL. Since attempts remain (1 of 3 used), verify the job transitions to state=retryable and reports the next retry attempt.",
   "spec_ref": "ojs-core#section-7.4",
-  "tags": ["level-0", "operations", "nack", "fail", "retryable"],
+  "tags": [
+    "level-0",
+    "operations",
+    "nack",
+    "fail",
+    "retryable"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +24,11 @@
       },
       "body": {
         "type": "test.fail_always",
-        "args": [{"action": "nack-retryable-test"}],
+        "args": [
+          {
+            "action": "nack-retryable-test"
+          }
+        ],
         "options": {
           "queue": "conformance-nack-retryable-test",
           "retry": {
@@ -30,7 +41,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available",
           "$.job.max_attempts": 3
         }
@@ -39,13 +52,16 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-nack-retryable-test"],
+        "queues": [
+          "conformance-nack-retryable-test"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -53,13 +69,14 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1
+          "$.jobs[0].attempt": 0
         }
       }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -84,7 +101,10 @@
           "$.state": "retryable",
           "$.attempt": 1,
           "$.max_attempts": 3,
-          "$.next_attempt_at": {"$exists": true, "$type": "string"}
+          "$.next_attempt_at": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     }

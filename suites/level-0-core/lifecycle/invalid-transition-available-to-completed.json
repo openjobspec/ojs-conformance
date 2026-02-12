@@ -5,18 +5,28 @@
   "name": "invalid-transition-available-to-completed",
   "description": "Attempting to ACK a job that is in the 'available' state (not 'active') MUST be rejected. The state machine only permits available -> active (via fetch). Directly acknowledging an available job is an invalid transition.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "invalid-transition", "negative"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "invalid-transition",
+    "negative"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.invalid_ack_available",
-        "args": [{"action": "should_not_complete_from_available"}],
+        "args": [
+          {
+            "action": "should_not_complete_from_available"
+          }
+        ],
         "options": {
           "queue": "default"
         }
@@ -32,6 +42,7 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -50,6 +61,7 @@
     {
       "id": "step-3",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

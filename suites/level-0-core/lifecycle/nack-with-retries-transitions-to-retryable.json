@@ -3,20 +3,31 @@
   "level": 0,
   "category": "lifecycle",
   "name": "nack-with-retries-transitions-to-retryable",
-  "description": "Failing (NACK) an active job that has remaining retry attempts MUST transition it to the 'retryable' state. With max_attempts=3 and attempt=1, two retries remain so the job MUST become retryable, not discarded.",
+  "description": "Failing (NACK) an active job that has remaining retry attempts MUST transition it to the 'retryable' state. With max_attempts=3 and attempt=0, all retries remain so the job MUST become retryable, not discarded.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "nack", "retryable", "retry"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "nack",
+    "retryable",
+    "retry"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.nack_retryable",
-        "args": [{"action": "verify_retryable_state"}],
+        "args": [
+          {
+            "action": "verify_retryable_state"
+          }
+        ],
         "options": {
           "queue": "default",
           "retry": {
@@ -38,25 +49,29 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["default"]
+        "queues": [
+          "default"
+        ]
       },
       "assertions": {
         "status": 200,
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1
+          "$.jobs[0].attempt": 0
         }
       }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -79,6 +94,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

@@ -5,24 +5,39 @@
   "name": "valid-full-job",
   "description": "Enqueue a job with ALL optional attributes (meta, priority, timeout, scheduled_at in the past, retry, unique). Verify that every client-provided attribute is preserved in the response.",
   "spec_ref": "ojs-core#section-5.2",
-  "tags": ["level-0", "envelope", "optional-fields", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "optional-fields",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "report.generate",
-        "args": [42, "quarterly", {"include_charts": true}],
+        "args": [
+          42,
+          "quarterly",
+          {
+            "include_charts": true
+          }
+        ],
         "meta": {
           "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
           "user_id": "usr_12345",
           "tenant_id": "tenant_acme",
           "correlation_id": "corr_report_q4_2026",
-          "tags": ["quarterly", "finance"]
+          "tags": [
+            "quarterly",
+            "finance"
+          ]
         },
         "options": {
           "queue": "reports",
@@ -35,10 +50,16 @@
             "backoff_coefficient": 2.0,
             "max_interval": "PT5M",
             "jitter": true,
-            "non_retryable_errors": ["ValidationError", "AuthenticationError"]
+            "non_retryable_errors": [
+              "ValidationError",
+              "AuthenticationError"
+            ]
           },
           "unique": {
-            "keys": ["type", "args"],
+            "keys": [
+              "type",
+              "args"
+            ],
             "period": "PT1H",
             "on_conflict": "reject"
           }

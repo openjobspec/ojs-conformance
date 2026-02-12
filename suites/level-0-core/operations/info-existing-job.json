@@ -5,11 +5,17 @@
   "name": "info-existing-job",
   "description": "PUSH a job, then GET the job by its ID. Verify the full job envelope is returned including all system-managed and user-supplied fields.",
   "spec_ref": "ojs-core#section-7.7",
-  "tags": ["level-0", "operations", "info", "get"],
+  "tags": [
+    "level-0",
+    "operations",
+    "info",
+    "get"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +23,13 @@
       },
       "body": {
         "type": "test.echo",
-        "args": ["hello", 42, {"key": "value"}],
+        "args": [
+          "hello",
+          42,
+          {
+            "key": "value"
+          }
+        ],
         "meta": {
           "trace_id": "test-info-existing-018",
           "user_id": "usr_test_info"
@@ -25,19 +37,25 @@
         "options": {
           "queue": "conformance-info-test",
           "priority": 5,
-          "tags": ["conformance", "info-test"]
+          "tags": [
+            "conformance",
+            "info-test"
+          ]
         }
       },
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true}
+          "$.job.id": {
+            "$exists": true
+          }
         }
       }
     },
     {
       "id": "step-2",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -52,13 +70,25 @@
           "$.job.type": "test.echo",
           "$.job.queue": "conformance-info-test",
           "$.job.state": "available",
-          "$.job.args": ["hello", 42, {"key": "value"}],
+          "$.job.args": [
+            "hello",
+            42,
+            {
+              "key": "value"
+            }
+          ],
           "$.job.meta.trace_id": "test-info-existing-018",
           "$.job.meta.user_id": "usr_test_info",
           "$.job.priority": 5,
           "$.job.attempt": 0,
-          "$.job.created_at": {"$exists": true, "$type": "string"},
-          "$.job.enqueued_at": {"$exists": true, "$type": "string"}
+          "$.job.created_at": {
+            "$exists": true,
+            "$type": "string"
+          },
+          "$.job.enqueued_at": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     }

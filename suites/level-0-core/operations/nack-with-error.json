@@ -5,11 +5,18 @@
   "name": "nack-with-error",
   "description": "PUSH a job, FETCH it, then FAIL with a structured error containing code, message, retryable flag, and details. Verify the error is stored and retrievable via INFO.",
   "spec_ref": "ojs-core#section-7.4",
-  "tags": ["level-0", "operations", "nack", "fail", "error"],
+  "tags": [
+    "level-0",
+    "operations",
+    "nack",
+    "fail",
+    "error"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +24,11 @@
       },
       "body": {
         "type": "test.fail_always",
-        "args": [{"action": "nack-with-error-test"}],
+        "args": [
+          {
+            "action": "nack-with-error-test"
+          }
+        ],
         "options": {
           "queue": "conformance-nack-error-test",
           "retry": {
@@ -28,7 +39,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available"
         }
       }
@@ -36,13 +49,16 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-nack-error-test"],
+        "queues": [
+          "conformance-nack-error-test"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -56,6 +72,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -79,7 +96,12 @@
         "status": 200,
         "body": {
           "$.job_id": "{{steps.step-1.response.body.job.id}}",
-          "$.state": {"$in": ["retryable", "discarded"]},
+          "$.state": {
+            "$in": [
+              "retryable",
+              "discarded"
+            ]
+          },
           "$.attempt": 1
         }
       }
@@ -87,6 +109,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -95,9 +118,16 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.error": {"$exists": true},
-          "$.job.error.type": {"$exists": true},
-          "$.job.error.message": {"$exists": true, "$type": "string"}
+          "$.job.error": {
+            "$exists": true
+          },
+          "$.job.error.type": {
+            "$exists": true
+          },
+          "$.job.error.message": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     }

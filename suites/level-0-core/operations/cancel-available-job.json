@@ -5,11 +5,17 @@
   "name": "cancel-available-job",
   "description": "PUSH a job, then CANCEL it while it is still in the 'available' state. Verify the server transitions the job to state=cancelled and returns the updated envelope.",
   "spec_ref": "ojs-core#section-7.6",
-  "tags": ["level-0", "operations", "cancel", "available"],
+  "tags": [
+    "level-0",
+    "operations",
+    "cancel",
+    "available"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +23,11 @@
       },
       "body": {
         "type": "test.noop",
-        "args": [{"action": "cancel-available-test"}],
+        "args": [
+          {
+            "action": "cancel-available-test"
+          }
+        ],
         "options": {
           "queue": "conformance-cancel-test"
         }
@@ -25,7 +35,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available"
         }
       }
@@ -33,6 +45,7 @@
     {
       "id": "step-2",
       "action": "DELETE",
+      "intent": "cancel",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -42,13 +55,17 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "cancelled",
-          "$.job.cancelled_at": {"$exists": true, "$type": "string"}
+          "$.job.cancelled_at": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     },
     {
       "id": "step-3",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

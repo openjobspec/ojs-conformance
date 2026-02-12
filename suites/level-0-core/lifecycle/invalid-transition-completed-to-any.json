@@ -5,18 +5,30 @@
   "name": "invalid-transition-completed-to-any",
   "description": "A job in the 'completed' terminal state MUST NOT accept any further state transitions. Attempting to NACK (fail) a completed job MUST be rejected with an error. The job state MUST remain 'completed'.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "invalid-transition", "terminal", "completed", "negative"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "invalid-transition",
+    "terminal",
+    "completed",
+    "negative"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.completed_no_transition",
-        "args": [{"action": "complete_then_try_fail"}],
+        "args": [
+          {
+            "action": "complete_then_try_fail"
+          }
+        ],
         "options": {
           "queue": "default"
         }
@@ -32,12 +44,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["default"]
+        "queues": [
+          "default"
+        ]
       },
       "assertions": {
         "status": 200,
@@ -50,6 +65,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -68,6 +84,7 @@
     {
       "id": "step-4",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -90,6 +107,7 @@
     {
       "id": "step-5",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

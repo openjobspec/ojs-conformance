@@ -5,18 +5,30 @@
   "name": "cancel-active-transitions-to-cancelled",
   "description": "Cancelling a job in the 'active' state MUST transition it to the 'cancelled' terminal state. Even though the job has been fetched by a worker, a cancellation request MUST be honored.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "cancel", "cancelled", "active", "terminal"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "cancel",
+    "cancelled",
+    "active",
+    "terminal"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.cancel_active",
-        "args": [{"action": "verify_cancel_from_active"}],
+        "args": [
+          {
+            "action": "verify_cancel_from_active"
+          }
+        ],
         "options": {
           "queue": "default"
         }
@@ -32,25 +44,29 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["default"]
+        "queues": [
+          "default"
+        ]
       },
       "assertions": {
         "status": 200,
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1
+          "$.jobs[0].attempt": 0
         }
       }
     },
     {
       "id": "step-3",
       "action": "DELETE",
+      "intent": "cancel",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -66,6 +82,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -75,7 +92,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "cancelled",
-          "$.job.attempt": 1,
+          "$.job.attempt": 0,
           "$.job.started_at": "string:datetime"
         }
       }

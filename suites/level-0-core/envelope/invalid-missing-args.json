@@ -5,11 +5,18 @@
   "name": "invalid-missing-args",
   "description": "Enqueue a job without the required 'args' field. The server MUST reject the request with 400 or 422 and return a structured error.",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-001",
-  "tags": ["level-0", "envelope", "validation", "negative-test", "required-fields"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "validation",
+    "negative-test",
+    "required-fields"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"

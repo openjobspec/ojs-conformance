@@ -5,18 +5,28 @@
   "name": "invalid-queue-format",
   "description": "Enqueue jobs with invalid queue name formats (uppercase letters, special characters, leading hyphen). The server MUST reject each request with 400 or 422. The queue field must match the pattern ^[a-z0-9][a-z0-9\\-\\.]*$.",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-004",
-  "tags": ["level-0", "envelope", "validation", "negative-test", "queue-format"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "validation",
+    "negative-test",
+    "queue-format"
+  ],
   "steps": [
     {
       "id": "step-1-uppercase",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "options": {
           "queue": "Default"
         }
@@ -33,13 +43,17 @@
     {
       "id": "step-2-special-chars",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "options": {
           "queue": "my_queue!"
         }
@@ -55,13 +69,17 @@
     {
       "id": "step-3-leading-hyphen",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "options": {
           "queue": "-invalid"
         }
@@ -77,13 +95,17 @@
     {
       "id": "step-4-spaces",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "options": {
           "queue": "my queue"
         }

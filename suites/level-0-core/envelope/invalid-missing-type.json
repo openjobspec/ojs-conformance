@@ -5,17 +5,27 @@
   "name": "invalid-missing-type",
   "description": "Enqueue a job without the required 'type' field. The server MUST reject the request with 400 or 422 and return a structured error.",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-001",
-  "tags": ["level-0", "envelope", "validation", "negative-test", "required-fields"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "validation",
+    "negative-test",
+    "required-fields"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": "number:range(400,422)",

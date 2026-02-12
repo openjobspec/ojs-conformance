@@ -5,18 +5,29 @@
   "name": "invalid-transition-scheduled-to-active",
   "description": "A job in the 'scheduled' state MUST NOT be directly acknowledged or failed. The state machine requires scheduled -> available -> active. Attempting to ACK a scheduled job MUST be rejected.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "invalid-transition", "scheduled", "negative"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "invalid-transition",
+    "scheduled",
+    "negative"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.scheduled_no_ack",
-        "args": [{"action": "should_not_ack_from_scheduled"}],
+        "args": [
+          {
+            "action": "should_not_ack_from_scheduled"
+          }
+        ],
         "options": {
           "queue": "default",
           "delay_until": "2099-12-31T23:59:59Z"
@@ -33,6 +44,7 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -51,6 +63,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -73,6 +86,7 @@
     {
       "id": "step-4",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

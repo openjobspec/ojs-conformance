@@ -5,11 +5,17 @@
   "name": "ack-completed",
   "description": "PUSH a job, FETCH it, then ACK with a result. Verify the server transitions the job to state=completed, stores the result, and sets completed_at.",
   "spec_ref": "ojs-core#section-7.3",
-  "tags": ["level-0", "operations", "ack", "completed"],
+  "tags": [
+    "level-0",
+    "operations",
+    "ack",
+    "completed"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +23,11 @@
       },
       "body": {
         "type": "test.echo",
-        "args": [{"message": "ack-completed-test"}],
+        "args": [
+          {
+            "message": "ack-completed-test"
+          }
+        ],
         "options": {
           "queue": "conformance-ack-test"
         }
@@ -25,7 +35,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.state": "available"
         }
       }
@@ -33,13 +45,16 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-ack-test"],
+        "queues": [
+          "conformance-ack-test"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -47,13 +62,14 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1
+          "$.jobs[0].attempt": 0
         }
       }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -72,7 +88,10 @@
           "$.acknowledged": true,
           "$.job_id": "{{steps.step-1.response.body.job.id}}",
           "$.state": "completed",
-          "$.completed_at": {"$exists": true, "$type": "string"}
+          "$.completed_at": {
+            "$exists": true,
+            "$type": "string"
+          }
         }
       }
     }

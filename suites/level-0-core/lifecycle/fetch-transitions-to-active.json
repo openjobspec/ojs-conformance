@@ -3,20 +3,30 @@
   "level": 0,
   "category": "lifecycle",
   "name": "fetch-transitions-to-active",
-  "description": "Fetching an available job MUST transition it to the 'active' state. The response MUST set attempt to 1 (first execution) and populate started_at with a timestamp.",
+  "description": "Fetching an available job MUST transition it to the 'active' state. The response MUST set attempt to 0 (no completed attempts yet) and populate started_at with a timestamp.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "fetch", "active"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "fetch",
+    "active"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.fetch_active",
-        "args": [{"action": "verify_active_state"}],
+        "args": [
+          {
+            "action": "verify_active_state"
+          }
+        ],
         "options": {
           "queue": "default"
         }
@@ -33,12 +43,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["default"]
+        "queues": [
+          "default"
+        ]
       },
       "assertions": {
         "status": 200,
@@ -46,7 +59,7 @@
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].type": "lifecycle.test.fetch_active",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1,
+          "$.jobs[0].attempt": 0,
           "$.jobs[0].started_at": "string:datetime",
           "$.jobs[0].queue": "default"
         }
@@ -55,6 +68,7 @@
     {
       "id": "step-3",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -64,7 +78,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 1,
+          "$.job.attempt": 0,
           "$.job.started_at": "string:datetime",
           "$.job.completed_at": "absent"
         }

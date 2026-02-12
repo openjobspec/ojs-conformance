@@ -5,11 +5,18 @@
   "name": "invalid-args-non-json-types",
   "description": "Verify that args containing only JSON-native types are accepted. Since JSON itself only supports native types (string, number, boolean, null, array, object), this test verifies that deeply nested and mixed-type args arrays are handled correctly. All values submitted are valid JSON-native types and MUST be accepted and preserved.",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-005",
-  "tags": ["level-0", "envelope", "validation", "args-format", "json-native"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "validation",
+    "args-format",
+    "json-native"
+  ],
   "steps": [
     {
       "id": "step-1-nested-complex-args",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -23,13 +30,32 @@
           true,
           false,
           null,
-          [1, "two", [3, [4, 5]]],
+          [
+            1,
+            "two",
+            [
+              3,
+              [
+                4,
+                5
+              ]
+            ]
+          ],
           {
             "nested": {
               "deeply": {
                 "key": "value",
-                "numbers": [1, 2, 3],
-                "mixed": [null, true, "text", 99.9]
+                "numbers": [
+                  1,
+                  2,
+                  3
+                ],
+                "mixed": [
+                  null,
+                  true,
+                  "text",
+                  99.9
+                ]
               }
             }
           }
@@ -56,6 +82,7 @@
     {
       "id": "step-2-empty-args",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"

@@ -5,18 +5,30 @@
   "name": "invalid-transition-cancelled-to-any",
   "description": "A job in the 'cancelled' terminal state MUST NOT accept any further state transitions. Attempting to FETCH, ACK, NACK, or CANCEL a cancelled job MUST be rejected. The job state MUST remain 'cancelled'.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "invalid-transition", "terminal", "cancelled", "negative"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "invalid-transition",
+    "terminal",
+    "cancelled",
+    "negative"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.cancelled_no_transition",
-        "args": [{"action": "cancel_then_try_operations"}],
+        "args": [
+          {
+            "action": "cancel_then_try_operations"
+          }
+        ],
         "options": {
           "queue": "default"
         }
@@ -32,6 +44,7 @@
     {
       "id": "step-2",
       "action": "DELETE",
+      "intent": "cancel",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -47,6 +60,7 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -65,6 +79,7 @@
     {
       "id": "step-4",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -87,6 +102,7 @@
     {
       "id": "step-5",
       "action": "DELETE",
+      "intent": "cancel",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -102,6 +118,7 @@
     {
       "id": "step-6",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

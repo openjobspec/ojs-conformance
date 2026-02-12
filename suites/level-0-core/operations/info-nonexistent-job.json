@@ -5,11 +5,18 @@
   "name": "info-nonexistent-job",
   "description": "GET a job using a random UUID that does not exist in the system. The server MUST respond with 404 Not Found and a structured error response.",
   "spec_ref": "ojs-core#section-7.7",
-  "tags": ["level-0", "operations", "info", "not-found", "error"],
+  "tags": [
+    "level-0",
+    "operations",
+    "info",
+    "not-found",
+    "error"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/01962222-bbbb-7ccc-8ddd-eeeeeeeeeeee",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -20,9 +27,14 @@
           "Content-Type": "application/openjobspec+json"
         },
         "body": {
-          "$.error": {"$exists": true},
+          "$.error": {
+            "$exists": true
+          },
           "$.error.code": "not_found",
-          "$.error.message": {"$exists": true, "$type": "string"},
+          "$.error.message": {
+            "$exists": true,
+            "$type": "string"
+          },
           "$.error.retryable": false
         }
       }

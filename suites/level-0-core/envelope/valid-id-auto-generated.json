@@ -5,18 +5,28 @@
   "name": "valid-id-auto-generated",
   "description": "Enqueue a job without providing an id field. The server MUST auto-generate a valid UUIDv7 identifier for the job. The generated id MUST match the UUIDv7 format: 8-4-4-4-12 lowercase hex with version nibble '7' in the third group.",
   "spec_ref": "ojs-core#section-5.1, L0-ENV-002",
-  "tags": ["level-0", "envelope", "id-generation", "uuidv7", "happy-path"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "id-generation",
+    "uuidv7",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"]
+        "args": [
+          "user@example.com",
+          "welcome"
+        ]
       },
       "assertions": {
         "status": 201,
@@ -30,13 +40,17 @@
     {
       "id": "step-2-second-job-different-id",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["other@example.com", "reset_password"]
+        "args": [
+          "other@example.com",
+          "reset_password"
+        ]
       },
       "assertions": {
         "status": 201,

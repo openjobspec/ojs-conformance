@@ -5,11 +5,18 @@
   "name": "fetch-multi-queue",
   "description": "PUSH jobs to different queues, then FETCH specifying multiple queues. Verify that the queue list is respected with left-to-right priority: the first queue listed is checked first.",
   "spec_ref": "ojs-core#section-7.2",
-  "tags": ["level-0", "operations", "fetch", "multi-queue", "priority"],
+  "tags": [
+    "level-0",
+    "operations",
+    "fetch",
+    "multi-queue",
+    "priority"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -17,7 +24,11 @@
       },
       "body": {
         "type": "test.noop",
-        "args": [{"source": "low-priority-queue"}],
+        "args": [
+          {
+            "source": "low-priority-queue"
+          }
+        ],
         "options": {
           "queue": "conformance-multi-low"
         }
@@ -25,7 +36,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.queue": "conformance-multi-low"
         }
       }
@@ -33,6 +46,7 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json",
@@ -40,7 +54,11 @@
       },
       "body": {
         "type": "test.noop",
-        "args": [{"source": "high-priority-queue"}],
+        "args": [
+          {
+            "source": "high-priority-queue"
+          }
+        ],
         "options": {
           "queue": "conformance-multi-high"
         }
@@ -48,7 +66,9 @@
       "assertions": {
         "status": 201,
         "body": {
-          "$.job.id": {"$exists": true},
+          "$.job.id": {
+            "$exists": true
+          },
           "$.job.queue": "conformance-multi-high"
         }
       }
@@ -56,13 +76,17 @@
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-multi-high", "conformance-multi-low"],
+        "queues": [
+          "conformance-multi-high",
+          "conformance-multi-low"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {
@@ -78,13 +102,17 @@
     {
       "id": "step-4",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json",
         "Accept": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["conformance-multi-high", "conformance-multi-low"],
+        "queues": [
+          "conformance-multi-high",
+          "conformance-multi-low"
+        ],
         "worker_id": "test-worker-1"
       },
       "assertions": {

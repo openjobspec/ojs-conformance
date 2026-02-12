@@ -5,18 +5,28 @@
   "name": "enqueue-with-future-schedule-sets-scheduled",
   "description": "Enqueuing a job with a future delay_until timestamp MUST set its state to 'scheduled' instead of 'available'. The job MUST NOT be fetchable by workers until the scheduled time arrives.",
   "spec_ref": "ojs-core#section-6.2",
-  "tags": ["level-0", "lifecycle", "enqueue", "scheduled"],
+  "tags": [
+    "level-0",
+    "lifecycle",
+    "enqueue",
+    "scheduled"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "lifecycle.test.scheduled",
-        "args": [{"action": "verify_scheduled_state"}],
+        "args": [
+          {
+            "action": "verify_scheduled_state"
+          }
+        ],
         "options": {
           "queue": "default",
           "delay_until": "2099-12-31T23:59:59Z"
@@ -39,6 +49,7 @@
     {
       "id": "step-2",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

@@ -5,18 +5,29 @@
   "name": "invalid-id-format",
   "description": "Enqueue jobs with malformed id values that do not conform to UUIDv7 format. The server MUST reject each request with 400 or 422. Valid UUIDv7 must match ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$.",
   "spec_ref": "ojs-core#section-5.1",
-  "tags": ["level-0", "envelope", "validation", "negative-test", "id-format", "uuidv7"],
+  "tags": [
+    "level-0",
+    "envelope",
+    "validation",
+    "negative-test",
+    "id-format",
+    "uuidv7"
+  ],
   "steps": [
     {
       "id": "step-1-uuidv4-not-v7",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "id": "550e8400-e29b-41d4-a716-446655440000"
       },
       "assertions": {
@@ -30,13 +41,17 @@
     {
       "id": "step-2-plain-string",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "id": "not-a-uuid-at-all"
       },
       "assertions": {
@@ -50,13 +65,17 @@
     {
       "id": "step-3-uppercase-uuid",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "id": "019461A8-1A2B-7C3D-8E4F-5A6B7C8D9E0F"
       },
       "assertions": {
@@ -70,13 +89,17 @@
     {
       "id": "step-4-empty-string",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "id": ""
       },
       "assertions": {
