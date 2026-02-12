@@ -129,46 +129,6 @@ Each test is a self-contained JSON file:
 }
 ```
 
-### Assertion Matchers
+### Assertion Matchers, Template References, and More
 
-| Matcher | Description |
-|---------|-------------|
-| `"string:nonempty"` | Any non-empty string |
-| `"string:uuid"` | Valid UUID (any version) |
-| `"string:uuidv7"` | Valid UUIDv7 |
-| `"string:datetime"` | RFC 3339 timestamp |
-| `"number:positive"` | Positive number |
-| `"number:non_negative"` | Non-negative number |
-| `"number:range(a,b)"` | Number within [a, b] |
-| `"any"` | Field exists with any value |
-| `"absent"` | Field must not exist |
-| `"array:length(n)"` | Array with exactly n elements |
-| `"array:nonempty"` | Array with 1+ elements |
-| `"array:empty"` | Empty array |
-| `"~value"` | Approximate value (configurable tolerance) |
-| `"string:pattern(regex)"` | String matching regex pattern |
-| Literal values | Exact match (strings, numbers, booleans, null) |
-
-### Template References
-
-Steps can reference results from previous steps:
-
-```json
-{
-  "path": "/ojs/v1/jobs/{{steps.enqueue.response.body.id}}"
-}
-```
-
-### Delays
-
-Steps can include delays for timing-sensitive tests:
-
-```json
-{
-  "id": "wait-and-fetch",
-  "delay_ms": 3000,
-  "action": "POST",
-  "path": "/ojs/v1/workers/fetch",
-  "body": { "queues": ["default"] }
-}
-```
+For the complete reference on assertion matchers, object operators, JSONPath syntax, template references, timing assertions, and the full test DSL, see the **[Test Case Reference](../docs/test-case-reference.md)**.

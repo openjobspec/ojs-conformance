@@ -118,6 +118,10 @@ The test runner produces a conformance report:
 }
 ```
 
+## Documentation
+
+- **[Test Case Reference](docs/test-case-reference.md)** — Complete reference for the test DSL: every field, matcher, operator, JSONPath syntax, template references, and timing assertions.
+
 ## Contributing
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on adding tests.
