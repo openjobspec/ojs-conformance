@@ -1,0 +1,95 @@
+{
+  "test_id": "L4-UNIQ-006",
+  "level": 4,
+  "category": "unique",
+  "name": "unique-by-type-and-args",
+  "description": "When unique keys include both 'type' and 'args', jobs with the same type and args MUST be treated as duplicates, while jobs with the same type but different args MUST be allowed. This validates that the uniqueness key composition works correctly.",
+  "spec_ref": "ojs-unique-jobs#section-2",
+  "tags": ["level-4", "unique", "keys", "type-args"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue job with type+args uniqueness",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.type_and_args",
+        "args": [{"user_id": "U-200", "action": "send_email"}],
+        "options": {
+          "queue": "unique-keys-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available", "active"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue same type+args - should be rejected as duplicate",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.type_and_args",
+        "args": [{"user_id": "U-200", "action": "send_email"}],
+        "options": {
+          "queue": "unique-keys-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available", "active"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error": "string:non_empty"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue same type but different args - should be accepted (different unique key)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.type_and_args",
+        "args": [{"user_id": "U-300", "action": "send_email"}],
+        "options": {
+          "queue": "unique-keys-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available", "active"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.args[0].user_id": "U-300"
+        }
+      }
+    }
+  ]
+}

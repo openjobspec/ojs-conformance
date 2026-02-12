@@ -1,0 +1,146 @@
+{
+  "test_id": "L4-PRI-003",
+  "level": 4,
+  "category": "priority",
+  "name": "priority-named-levels",
+  "description": "The server MUST support named priority levels that map to numeric values: HIGH=10, NORMAL=0, LOW=-10. Jobs enqueued with named priority levels MUST be fetched in the same order as their numeric equivalents (HIGH first, then NORMAL, then LOW).",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-4", "priority", "named-levels", "ordering"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue job with LOW named priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.named_low",
+        "args": [{"level": "LOW"}],
+        "options": {
+          "queue": "priority-named-test",
+          "priority": -10
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue job with HIGH named priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.named_high",
+        "args": [{"level": "HIGH"}],
+        "options": {
+          "queue": "priority-named-test",
+          "priority": 10
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue job with NORMAL named priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.named_normal",
+        "args": [{"level": "NORMAL"}],
+        "options": {
+          "queue": "priority-named-test",
+          "priority": 0
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "First FETCH should return HIGH priority job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-named-test"],
+        "worker_id": "worker-named-pri-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-2.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.named_high",
+          "$.jobs[0].args[0].level": "HIGH"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Second FETCH should return NORMAL priority job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-named-test"],
+        "worker_id": "worker-named-pri-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-3.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.named_normal",
+          "$.jobs[0].args[0].level": "NORMAL"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Third FETCH should return LOW priority job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-named-test"],
+        "worker_id": "worker-named-pri-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.named_low",
+          "$.jobs[0].args[0].level": "LOW"
+        }
+      }
+    }
+  ]
+}

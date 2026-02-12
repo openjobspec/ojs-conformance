@@ -1,0 +1,107 @@
+{
+  "test_id": "L4-UNIQ-007",
+  "level": 4,
+  "category": "unique",
+  "name": "unique-state-filtering",
+  "description": "Unique constraints with states=['available'] MUST only consider jobs in the 'available' state as duplicates. After completing a job (moving it to 'completed'), enqueuing the same job again MUST succeed because 'completed' is not in the uniqueness states filter.",
+  "spec_ref": "ojs-unique-jobs#section-6",
+  "tags": ["level-4", "unique", "states", "filtering"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue job with unique states=['available']",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.state_filter",
+        "args": [{"action": "process_payment", "payment_id": "PAY-001"}],
+        "options": {
+          "queue": "unique-state-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch the job to move it to active state",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["unique-state-test"],
+        "worker_id": "worker-unique-state-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Complete the job to move it to completed state",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-unique-state-1",
+        "result": {"status": "payment_processed"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Enqueue the same job again - should succeed since 'completed' is not in the states filter",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.state_filter",
+        "args": [{"action": "process_payment", "payment_id": "PAY-001"}],
+        "options": {
+          "queue": "unique-state-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    }
+  ]
+}

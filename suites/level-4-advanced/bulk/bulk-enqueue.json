@@ -1,0 +1,60 @@
+{
+  "test_id": "L4-BULK-001",
+  "level": 4,
+  "category": "bulk",
+  "name": "bulk-enqueue",
+  "description": "Batch enqueuing 10 jobs in a single request MUST create all 10 jobs successfully. The response MUST return 201 with all job IDs and each job MUST be in the 'available' state.",
+  "spec_ref": "ojs-json-format#section-10",
+  "tags": ["level-4", "bulk", "batch-enqueue", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Batch enqueue 10 jobs in a single request",
+      "action": "POST",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "jobs": [
+          { "type": "bulk.test.job", "args": [{"index": 0}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 1}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 2}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 3}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 4}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 5}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 6}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 7}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 8}], "options": {"queue": "bulk-test"} },
+          { "type": "bulk.test.job", "args": [{"index": 9}], "options": {"queue": "bulk-test"} }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.jobs": "array:length:10",
+          "$.jobs[0].id": "string:uuidv7",
+          "$.jobs[0].state": "available",
+          "$.jobs[9].id": "string:uuidv7",
+          "$.jobs[9].state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Verify queue stats show 10 available jobs",
+      "action": "GET",
+      "path": "/ojs/v1/queues/bulk-test/stats",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "bulk-test",
+          "$.queue.available": 10
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "test_id": "L4-PRI-002",
+  "level": 4,
+  "category": "priority",
+  "name": "same-priority-fifo",
+  "description": "When multiple jobs share the same priority level, FETCH MUST return them in FIFO order (first-in, first-out). Enqueuing 3 jobs with priority=0 MUST result in them being fetched in the same order they were enqueued.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-4", "priority", "fifo", "same-priority"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue first job (priority=0)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.fifo_first",
+        "args": [{"order": 1, "enqueue_sequence": "first"}],
+        "options": {
+          "queue": "priority-fifo-test",
+          "priority": 0
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue second job (priority=0)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.fifo_second",
+        "args": [{"order": 2, "enqueue_sequence": "second"}],
+        "options": {
+          "queue": "priority-fifo-test",
+          "priority": 0
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue third job (priority=0)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.fifo_third",
+        "args": [{"order": 3, "enqueue_sequence": "third"}],
+        "options": {
+          "queue": "priority-fifo-test",
+          "priority": 0
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "First FETCH should return the first-enqueued job (FIFO)",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-fifo-test"],
+        "worker_id": "worker-fifo-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.fifo_first",
+          "$.jobs[0].args[0].enqueue_sequence": "first"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Second FETCH should return the second-enqueued job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-fifo-test"],
+        "worker_id": "worker-fifo-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-2.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.fifo_second",
+          "$.jobs[0].args[0].enqueue_sequence": "second"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Third FETCH should return the third-enqueued job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-fifo-test"],
+        "worker_id": "worker-fifo-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-3.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.fifo_third",
+          "$.jobs[0].args[0].enqueue_sequence": "third"
+        }
+      }
+    }
+  ]
+}

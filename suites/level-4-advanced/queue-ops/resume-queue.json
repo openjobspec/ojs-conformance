@@ -1,0 +1,150 @@
+{
+  "test_id": "L4-PAUSE-002",
+  "level": 4,
+  "category": "queue-ops",
+  "name": "resume-queue",
+  "description": "Resuming a paused queue MUST restore normal job delivery. After pausing, enqueuing multiple jobs, and then resuming, all enqueued jobs MUST become fetchable by workers in the expected order.",
+  "spec_ref": "ojs-http-binding#section-7",
+  "tags": ["level-4", "queue-ops", "resume", "delivery-restored"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Pause the queue",
+      "action": "POST",
+      "path": "/ojs/v1/queues/resume-test/pause",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {},
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "resume-test",
+          "$.queue.paused": true
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue first job while queue is paused",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "queueops.test.resume_job_1",
+        "args": [{"order": 1}],
+        "options": {
+          "queue": "resume-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue second job while queue is paused",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "queueops.test.resume_job_2",
+        "args": [{"order": 2}],
+        "options": {
+          "queue": "resume-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Verify no jobs are fetchable while paused",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["resume-test"],
+        "worker_id": "worker-resume-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": []
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Resume the queue",
+      "action": "POST",
+      "path": "/ojs/v1/queues/resume-test/resume",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {},
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "resume-test",
+          "$.queue.paused": false
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Fetch first job after resuming - should now be available",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["resume-test"],
+        "worker_id": "worker-resume-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active",
+          "$.jobs[0].queue": "resume-test"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "description": "Fetch second job - also should be available after resume",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["resume-test"],
+        "worker_id": "worker-resume-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active",
+          "$.jobs[0].queue": "resume-test"
+        }
+      }
+    }
+  ]
+}

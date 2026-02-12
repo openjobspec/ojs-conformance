@@ -1,0 +1,84 @@
+{
+  "test_id": "L4-UNIQ-002",
+  "level": 4,
+  "category": "unique",
+  "name": "unique-reject-duplicate",
+  "description": "A job enqueued with a unique constraint and on_conflict='reject' MUST cause subsequent enqueue attempts with the same unique key to be rejected with 409 Conflict. The original job MUST remain unaffected.",
+  "spec_ref": "ojs-unique-jobs#section-2",
+  "tags": ["level-4", "unique", "reject", "conflict"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue job with unique constraint (on_conflict=reject)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.reject_duplicate",
+        "args": [{"action": "process_order", "order_id": "ORD-001"}],
+        "options": {
+          "queue": "unique-reject-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available", "active", "retryable", "scheduled"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.type": "unique.test.reject_duplicate"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Attempt to enqueue the same job again - should be rejected with 409",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.reject_duplicate",
+        "args": [{"action": "process_order", "order_id": "ORD-001"}],
+        "options": {
+          "queue": "unique-reject-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "reject",
+            "states": ["available", "active", "retryable", "scheduled"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error": "string:non_empty"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Verify the original job is still available and unaffected",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "available",
+          "$.job.type": "unique.test.reject_duplicate"
+        }
+      }
+    }
+  ]
+}

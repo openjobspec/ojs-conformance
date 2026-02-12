@@ -1,0 +1,152 @@
+{
+  "test_id": "L4-PRI-001",
+  "level": 4,
+  "category": "priority",
+  "name": "higher-priority-first",
+  "description": "When multiple jobs are enqueued with different priorities, FETCH MUST return jobs in priority order with the highest numeric priority first. Enqueuing jobs with priorities 10, 0, and -10 then fetching 3 times MUST yield them in descending priority order.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-4", "priority", "ordering", "descending"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue low priority job (priority=-10)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.low",
+        "args": [{"priority_label": "low", "value": -10}],
+        "options": {
+          "queue": "priority-test",
+          "priority": -10
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.priority": -10
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue high priority job (priority=10)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.high",
+        "args": [{"priority_label": "high", "value": 10}],
+        "options": {
+          "queue": "priority-test",
+          "priority": 10
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.priority": 10
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue normal priority job (priority=0)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "priority.test.normal",
+        "args": [{"priority_label": "normal", "value": 0}],
+        "options": {
+          "queue": "priority-test",
+          "priority": 0
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.priority": 0
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "First FETCH should return the highest priority job (priority=10)",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-test"],
+        "worker_id": "worker-pri-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-2.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.high",
+          "$.jobs[0].priority": 10,
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Second FETCH should return the normal priority job (priority=0)",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-test"],
+        "worker_id": "worker-pri-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-3.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.normal",
+          "$.jobs[0].priority": 0,
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Third FETCH should return the lowest priority job (priority=-10)",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["priority-test"],
+        "worker_id": "worker-pri-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].type": "priority.test.low",
+          "$.jobs[0].priority": -10,
+          "$.jobs[0].state": "active"
+        }
+      }
+    }
+  ]
+}

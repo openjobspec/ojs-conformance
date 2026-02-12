@@ -1,0 +1,84 @@
+{
+  "test_id": "L4-UNIQ-004",
+  "level": 4,
+  "category": "unique",
+  "name": "unique-ignore-duplicate",
+  "description": "A job enqueued with on_conflict='ignore' MUST return 200 OK with the existing job's ID when a duplicate is submitted. The original job MUST remain unchanged and no new job MUST be created.",
+  "spec_ref": "ojs-unique-jobs#section-5",
+  "tags": ["level-4", "unique", "ignore", "conflict"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue first job with unique constraint (on_conflict=ignore)",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.ignore_duplicate",
+        "args": [{"action": "send_notification", "user_id": "U-100"}],
+        "options": {
+          "queue": "unique-ignore-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "ignore",
+            "states": ["available", "active", "retryable", "scheduled"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue duplicate with ignore policy - should return 200 with existing job ID",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "unique.test.ignore_duplicate",
+        "args": [{"action": "send_notification", "user_id": "U-100"}],
+        "options": {
+          "queue": "unique-ignore-test",
+          "unique": {
+            "keys": ["type", "args"],
+            "on_conflict": "ignore",
+            "states": ["available", "active", "retryable", "scheduled"]
+          }
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Verify the original job is still available and unmodified",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "available",
+          "$.job.type": "unique.test.ignore_duplicate"
+        }
+      }
+    }
+  ]
+}

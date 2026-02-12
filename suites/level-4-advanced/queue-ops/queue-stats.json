@@ -1,0 +1,173 @@
+{
+  "test_id": "L4-STATS-001",
+  "level": 4,
+  "category": "queue-ops",
+  "name": "queue-stats",
+  "description": "The queue stats endpoint MUST return accurate counts of jobs by state. After enqueuing 3 jobs and fetching 1 (moving it to active), the stats MUST show 2 available and 1 active.",
+  "spec_ref": "ojs-http-binding#section-7",
+  "tags": ["level-4", "queue-ops", "stats", "counts"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue first job",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "queueops.test.stats_job",
+        "args": [{"index": 1}],
+        "options": {
+          "queue": "stats-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue second job",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "queueops.test.stats_job",
+        "args": [{"index": 2}],
+        "options": {
+          "queue": "stats-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue third job",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "queueops.test.stats_job",
+        "args": [{"index": 3}],
+        "options": {
+          "queue": "stats-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Check initial stats - should show 3 available",
+      "action": "GET",
+      "path": "/ojs/v1/queues/stats-test/stats",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "stats-test",
+          "$.queue.available": 3,
+          "$.queue.active": 0,
+          "$.queue.completed": 0
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Fetch one job to move it to active state",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["stats-test"],
+        "worker_id": "worker-stats-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Check stats after fetch - should show 2 available, 1 active",
+      "action": "GET",
+      "path": "/ojs/v1/queues/stats-test/stats",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "stats-test",
+          "$.queue.available": 2,
+          "$.queue.active": 1,
+          "$.queue.completed": 0
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "description": "Complete the active job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-5.response.body.jobs[0].id}}",
+        "worker_id": "worker-stats-1",
+        "result": {"status": "done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-8",
+      "description": "Check final stats - should show 2 available, 0 active, 1 completed",
+      "action": "GET",
+      "path": "/ojs/v1/queues/stats-test/stats",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "stats-test",
+          "$.queue.available": 2,
+          "$.queue.active": 0,
+          "$.queue.completed": 1
+        }
+      }
+    }
+  ]
+}

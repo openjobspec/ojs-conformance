@@ -1,0 +1,147 @@
+{
+  "test_id": "L4-RL-001",
+  "level": 4,
+  "category": "rate-limit",
+  "name": "rate-limit-per-queue",
+  "description": "When a rate limit is configured on a queue, the server MUST throttle job delivery to workers. After enqueuing multiple jobs and fetching rapidly, the rate limit MUST prevent more jobs from being delivered than the configured rate allows within the window.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-4", "rate-limit", "throttling", "queue"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Enqueue first job on rate-limited queue",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ratelimit.test.job_1",
+        "args": [{"task": "first"}],
+        "options": {
+          "queue": "rate-limit-test",
+          "rate_limit": {
+            "max_per_second": 1
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Enqueue second job on the same rate-limited queue",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ratelimit.test.job_2",
+        "args": [{"task": "second"}],
+        "options": {
+          "queue": "rate-limit-test",
+          "rate_limit": {
+            "max_per_second": 1
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Enqueue third job on the same rate-limited queue",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ratelimit.test.job_3",
+        "args": [{"task": "third"}],
+        "options": {
+          "queue": "rate-limit-test",
+          "rate_limit": {
+            "max_per_second": 1
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch first job - should succeed within rate limit",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["rate-limit-test"],
+        "worker_id": "worker-rl-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Immediately try to fetch second job - rate limit should prevent delivery",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["rate-limit-test"],
+        "worker_id": "worker-rl-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": []
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Wait 1.5 seconds for the rate limit window to reset, then fetch again",
+      "delay_ms": 1500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["rate-limit-test"],
+        "worker_id": "worker-rl-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    }
+  ]
+}
