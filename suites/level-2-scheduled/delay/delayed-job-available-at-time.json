@@ -1,0 +1,68 @@
+{
+  "test_id": "L2-DEL-003",
+  "level": 2,
+  "category": "delay",
+  "name": "delayed-job-available-at-time",
+  "description": "A job enqueued with scheduled_at set 2 seconds in the future MUST transition from 'scheduled' to 'available' once the scheduled time arrives. After waiting 3 seconds, a GET on the job MUST show it in the 'available' state.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-2", "delay", "scheduled", "state-transition"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "delay.test.available_at_time",
+        "args": [{"action": "verify_state_transition_to_available"}],
+        "options": {
+          "queue": "delay-test",
+          "scheduled_at": "+PT2S"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "scheduled",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Confirm job is initially in scheduled state",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "scheduled"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Wait 3 seconds for the scheduled_at time to pass, then verify state is available",
+      "delay_ms": 3000,
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "available",
+          "$.job.attempt": 0
+        }
+      }
+    }
+  ]
+}

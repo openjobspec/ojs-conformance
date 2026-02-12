@@ -1,0 +1,72 @@
+{
+  "test_id": "L2-TTL-001",
+  "level": 2,
+  "category": "ttl",
+  "name": "expired-job-discarded",
+  "description": "A job enqueued with expires_at set 2 seconds in the future MUST be discarded after that time passes. After waiting 3 seconds, the job MUST NOT be fetchable, and its state MUST be 'discarded'.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-2", "ttl", "expiry", "discarded"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ttl.test.expired_discarded",
+        "args": [{"action": "should_expire_before_execution"}],
+        "options": {
+          "queue": "ttl-test",
+          "expires_at": "+PT2S"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.expires_at": "string:datetime"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Wait 3 seconds for the TTL to expire",
+      "delay_ms": 3000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["ttl-test"],
+        "worker_id": "worker-ttl-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": []
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Verify the job's state is now discarded",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "discarded",
+          "$.job.completed_at": "absent"
+        }
+      }
+    }
+  ]
+}

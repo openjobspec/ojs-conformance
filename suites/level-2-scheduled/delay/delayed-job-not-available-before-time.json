@@ -1,0 +1,78 @@
+{
+  "test_id": "L2-DEL-002",
+  "level": 2,
+  "category": "delay",
+  "name": "delayed-job-not-available-before-time",
+  "description": "A job enqueued with scheduled_at set 5 seconds in the future MUST NOT be fetchable before that time. An immediate FETCH after enqueue MUST return no jobs. After waiting past the scheduled time, a subsequent FETCH MUST return the job.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-2", "delay", "scheduled", "timing"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "delay.test.not_before_time",
+        "args": [{"action": "verify_delayed_visibility"}],
+        "options": {
+          "queue": "delay-test",
+          "scheduled_at": "+PT5S"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "scheduled",
+          "$.job.scheduled_at": "string:datetime",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Immediately try to fetch; job should not be available yet",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["delay-test"],
+        "worker_id": "worker-delay-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": []
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Wait 6 seconds so the scheduled_at time has passed",
+      "delay_ms": 6000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["delay-test"],
+        "worker_id": "worker-delay-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].type": "delay.test.not_before_time",
+          "$.jobs[0].attempt": 1
+        }
+      }
+    }
+  ]
+}

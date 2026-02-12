@@ -1,0 +1,57 @@
+{
+  "test_id": "L2-DEL-004",
+  "level": 2,
+  "category": "delay",
+  "name": "delayed-job-past-schedule-immediate",
+  "description": "A job enqueued with scheduled_at set to a time in the past MUST be immediately available for processing. The server MUST treat a past scheduled_at as equivalent to an immediate enqueue.",
+  "spec_ref": "ojs-core#section-7.1",
+  "tags": ["level-2", "delay", "scheduled", "past-time", "immediate"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "delay.test.past_schedule",
+        "args": [{"action": "verify_immediate_availability"}],
+        "options": {
+          "queue": "delay-test",
+          "scheduled_at": "2020-01-01T00:00:00Z"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.attempt": 0,
+          "$.job.enqueued_at": "string:datetime"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Immediately fetch the job; it should be available right away",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["delay-test"],
+        "worker_id": "worker-delay-past-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 1
+        }
+      }
+    }
+  ]
+}
