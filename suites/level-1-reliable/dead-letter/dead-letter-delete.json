@@ -1,0 +1,126 @@
+{
+  "test_id": "L1-DLQ-004",
+  "level": 1,
+  "category": "dead-letter",
+  "name": "dead-letter-delete",
+  "description": "A job in the dead letter queue MUST be permanently removable via the DLQ delete endpoint. After deletion, the job MUST NOT appear in the DLQ listing and MUST NOT be retrievable.",
+  "spec_ref": "ojs-core#section-7",
+  "tags": ["level-1", "dead-letter", "delete"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "dlq.test.delete",
+        "args": [{"action": "always_fail"}],
+        "options": {
+          "queue": "dlq-delete-test",
+          "retry_policy": {
+            "max_attempts": 1,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "dead_letter"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["dlq-delete-test"],
+        "worker_id": "worker-dlq-delete-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-dlq-delete-1",
+        "error": {
+          "type": "ProcessingError",
+          "message": "Failure to move to DLQ for deletion test"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/dead-letter",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[?(@.id=='{{steps.step-1.response.body.job.id}}')]": "exists"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "DELETE",
+      "path": "/ojs/v1/dead-letter/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.deleted": true,
+          "$.job_id": "{{steps.step-1.response.body.job.id}}"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "action": "GET",
+      "path": "/ojs/v1/dead-letter",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[?(@.id=='{{steps.step-1.response.body.job.id}}')]": "absent"
+        }
+      }
+    }
+  ]
+}

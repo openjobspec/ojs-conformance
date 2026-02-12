@@ -1,0 +1,161 @@
+{
+  "test_id": "L1-DLQ-003",
+  "level": 1,
+  "category": "dead-letter",
+  "name": "dead-letter-list",
+  "description": "The dead letter queue listing endpoint MUST return all jobs that have been moved to the DLQ. When multiple jobs are discarded with on_exhaustion='dead_letter', all of them MUST appear in the listing.",
+  "spec_ref": "ojs-core#section-7",
+  "tags": ["level-1", "dead-letter", "listing"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "dlq.test.list-first",
+        "args": [{"action": "always_fail", "label": "first"}],
+        "options": {
+          "queue": "dlq-list-test",
+          "retry_policy": {
+            "max_attempts": 1,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "dead_letter"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "dlq.test.list-second",
+        "args": [{"action": "always_fail", "label": "second"}],
+        "options": {
+          "queue": "dlq-list-test",
+          "retry_policy": {
+            "max_attempts": 1,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "dead_letter"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["dlq-list-test"],
+        "worker_id": "worker-dlq-list-1"
+      },
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-3.response.body.job.id}}",
+        "worker_id": "worker-dlq-list-1",
+        "error": {
+          "type": "ProcessingError",
+          "message": "First job failure"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["dlq-list-test"],
+        "worker_id": "worker-dlq-list-1"
+      },
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-6",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-5.response.body.job.id}}",
+        "worker_id": "worker-dlq-list-1",
+        "error": {
+          "type": "ProcessingError",
+          "message": "Second job failure"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "path": "/ojs/v1/dead-letter",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": "array:min_length:2",
+          "$.jobs[?(@.id=='{{steps.step-1.response.body.job.id}}')]": "exists",
+          "$.jobs[?(@.id=='{{steps.step-2.response.body.job.id}}')]": "exists"
+        }
+      }
+    }
+  ]
+}
