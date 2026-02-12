@@ -1,0 +1,173 @@
+{
+  "test_id": "L1-RTR-008",
+  "level": 1,
+  "category": "retry",
+  "name": "retry-max-interval-cap",
+  "description": "When the computed backoff interval exceeds max_interval, the retry delay MUST be capped at max_interval. With initial_interval=PT1S, backoff_coefficient=10.0, and max_interval=PT2S, the second retry delay MUST NOT exceed 2s.",
+  "spec_ref": "ojs-retry#section-3",
+  "tags": ["level-1", "retry", "max-interval", "backoff-cap"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "retry.test.max-interval-cap",
+        "args": [{"action": "always_fail"}],
+        "options": {
+          "queue": "retry-test",
+          "retry_policy": {
+            "max_attempts": 4,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 10.0,
+            "max_interval": "PT2S",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "discard"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-max-interval-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-max-interval-1",
+        "error": {
+          "type": "TransientError",
+          "message": "First failure - 1s delay"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "retryable",
+          "$.job.attempt": 1,
+          "$.job.retry_delay_ms": "~1000"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "delay_ms": 1200,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-max-interval-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-max-interval-1",
+        "error": {
+          "type": "TransientError",
+          "message": "Second failure - computed 10s but capped at 2s"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "retryable",
+          "$.job.attempt": 2,
+          "$.job.retry_delay_ms": "~2000"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "delay_ms": 2500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-max-interval-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 2
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-max-interval-1",
+        "error": {
+          "type": "TransientError",
+          "message": "Third failure - computed 100s but capped at 2s"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "retryable",
+          "$.job.attempt": 3,
+          "$.job.retry_delay_ms": "~2000"
+        }
+      }
+    }
+  ]
+}

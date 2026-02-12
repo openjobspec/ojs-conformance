@@ -1,0 +1,113 @@
+{
+  "test_id": "L1-RTR-003",
+  "level": 1,
+  "category": "retry",
+  "name": "retry-with-jitter",
+  "description": "A job with jitter=true MUST randomize the retry delay within the range [0.5x, 1.5x] of the computed backoff interval. The actual delay MUST fall within this jitter range.",
+  "spec_ref": "ojs-retry#section-5",
+  "tags": ["level-1", "retry", "jitter"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "retry.test.jitter",
+        "args": [{"action": "verify_jitter_delay"}],
+        "options": {
+          "queue": "retry-test",
+          "retry_policy": {
+            "max_attempts": 3,
+            "initial_interval": "PT2S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": true,
+            "non_retryable_errors": [],
+            "on_exhaustion": "discard"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-jitter-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-jitter-1",
+        "error": {
+          "type": "TransientError",
+          "message": "Failure to trigger jittered retry"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "retryable",
+          "$.job.attempt": 1,
+          "$.job.retry_delay_ms": {
+            "range": {
+              "min": 1000,
+              "max": 3000
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Wait for the jittered retry delay to elapse (max jitter = 3s for 2s base)",
+      "delay_ms": 3500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-jitter-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "active",
+          "$.job.attempt": 1
+        }
+      }
+    }
+  ]
+}

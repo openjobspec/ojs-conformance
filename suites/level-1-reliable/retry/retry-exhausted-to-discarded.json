@@ -1,0 +1,101 @@
+{
+  "test_id": "L1-RTR-006",
+  "level": 1,
+  "category": "retry",
+  "name": "retry-exhausted-to-discarded",
+  "description": "When all retry attempts are exhausted and on_exhaustion='discard', the job MUST transition to the 'discarded' state. The job MUST NOT appear in the dead letter queue.",
+  "spec_ref": "ojs-retry#section-2",
+  "tags": ["level-1", "retry", "exhaustion", "discard"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "retry.test.exhaust-to-discard",
+        "args": [{"action": "always_fail"}],
+        "options": {
+          "queue": "retry-test",
+          "retry_policy": {
+            "max_attempts": 1,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "discard"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-exhaust-discard-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-exhaust-discard-1",
+        "error": {
+          "type": "TransientError",
+          "message": "Single allowed attempt exhausted"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded",
+          "$.job.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded",
+          "$.job.attempt": 1,
+          "$.job.completed_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}

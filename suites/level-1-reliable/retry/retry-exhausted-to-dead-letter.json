@@ -1,0 +1,100 @@
+{
+  "test_id": "L1-RTR-007",
+  "level": 1,
+  "category": "retry",
+  "name": "retry-exhausted-to-dead-letter",
+  "description": "When all retry attempts are exhausted and on_exhaustion='dead_letter', the job MUST be moved to the dead letter queue. The job state MUST be 'discarded' and it MUST appear in the dead letter queue listing.",
+  "spec_ref": "ojs-retry#section-2",
+  "tags": ["level-1", "retry", "exhaustion", "dead-letter"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "retry.test.exhaust-to-dlq",
+        "args": [{"action": "always_fail"}],
+        "options": {
+          "queue": "retry-test",
+          "retry_policy": {
+            "max_attempts": 1,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "dead_letter"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-exhaust-dlq-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-exhaust-dlq-1",
+        "error": {
+          "type": "TransientError",
+          "message": "Exhaust to trigger dead letter"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded",
+          "$.job.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/dead-letter",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[?(@.id=='{{steps.step-1.response.body.job.id}}')]": "exists",
+          "$.jobs[?(@.id=='{{steps.step-1.response.body.job.id}}')].state": "discarded"
+        }
+      }
+    }
+  ]
+}

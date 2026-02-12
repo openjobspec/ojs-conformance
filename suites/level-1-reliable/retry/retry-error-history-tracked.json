@@ -1,0 +1,190 @@
+{
+  "test_id": "L1-RTR-014",
+  "level": 1,
+  "category": "retry",
+  "name": "retry-error-history-tracked",
+  "description": "When a job fails multiple times with different error types, the system MUST preserve the complete error history. Each error entry MUST include the error type, message, and the attempt number at which it occurred.",
+  "spec_ref": "ojs-retry#section-10",
+  "tags": ["level-1", "retry", "error-history"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "retry.test.error-history",
+        "args": [{"action": "fail_with_different_errors"}],
+        "options": {
+          "queue": "retry-test",
+          "retry_policy": {
+            "max_attempts": 4,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "max_interval": "PT5M",
+            "jitter": false,
+            "non_retryable_errors": [],
+            "on_exhaustion": "discard"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-error-history-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-error-history-1",
+        "error": {
+          "type": "ConnectionTimeout",
+          "message": "Database connection timed out"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "delay_ms": 1200,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-error-history-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-error-history-1",
+        "error": {
+          "type": "RateLimitExceeded",
+          "message": "API rate limit reached"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.attempt": 2
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "delay_ms": 1200,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["retry-test"],
+        "worker_id": "worker-error-history-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.attempt": 2
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-error-history-1",
+        "error": {
+          "type": "InternalServerError",
+          "message": "Unexpected null reference"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.attempt": 3
+        }
+      }
+    },
+    {
+      "id": "step-8",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.errors": "array:length:3",
+          "$.job.errors[0].type": "ConnectionTimeout",
+          "$.job.errors[0].message": "Database connection timed out",
+          "$.job.errors[0].attempt": 0,
+          "$.job.errors[1].type": "RateLimitExceeded",
+          "$.job.errors[1].message": "API rate limit reached",
+          "$.job.errors[1].attempt": 1,
+          "$.job.errors[2].type": "InternalServerError",
+          "$.job.errors[2].message": "Unexpected null reference",
+          "$.job.errors[2].attempt": 2
+        }
+      }
+    }
+  ]
+}
