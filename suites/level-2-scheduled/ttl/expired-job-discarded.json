@@ -5,18 +5,28 @@
   "name": "expired-job-discarded",
   "description": "A job enqueued with expires_at set 2 seconds in the future MUST be discarded after that time passes. After waiting 3 seconds, the job MUST NOT be fetchable, and its state MUST be 'discarded'.",
   "spec_ref": "ojs-core#section-5.2",
-  "tags": ["level-2", "ttl", "expiry", "discarded"],
+  "tags": [
+    "level-2",
+    "ttl",
+    "expiry",
+    "discarded"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "ttl.test.expired_discarded",
-        "args": [{"action": "should_expire_before_execution"}],
+        "args": [
+          {
+            "action": "should_expire_before_execution"
+          }
+        ],
         "options": {
           "queue": "ttl-test",
           "expires_at": "+PT2S"
@@ -36,12 +46,15 @@
       "description": "Wait 3 seconds for the TTL to expire",
       "delay_ms": 3000,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["ttl-test"],
+        "queues": [
+          "ttl-test"
+        ],
         "worker_id": "worker-ttl-1"
       },
       "assertions": {
@@ -55,6 +68,7 @@
       "id": "step-3",
       "description": "Verify the job's state is now discarded",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

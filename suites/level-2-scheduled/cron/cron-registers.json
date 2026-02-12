@@ -5,11 +5,17 @@
   "name": "cron-registers",
   "description": "Registering a cron job via POST MUST return 201 with the cron entry containing name, expression, next_run_at timestamp, and enabled=true by default.",
   "spec_ref": "ojs-cron#section-2",
-  "tags": ["level-2", "cron", "register", "happy-path"],
+  "tags": [
+    "level-2",
+    "cron",
+    "register",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -19,7 +25,11 @@
         "expression": "*/5 * * * *",
         "job_template": {
           "type": "cron.test.register",
-          "args": [{"action": "periodic_task"}],
+          "args": [
+            {
+              "action": "periodic_task"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }

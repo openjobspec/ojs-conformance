@@ -5,11 +5,17 @@
   "name": "cron-delete",
   "description": "After registering a cron job, deleting it via DELETE MUST return 200 and the cron entry MUST no longer appear in the list endpoint. A subsequent GET for the deleted cron MUST confirm removal.",
   "spec_ref": "ojs-cron#section-2",
-  "tags": ["level-2", "cron", "delete", "lifecycle"],
+  "tags": [
+    "level-2",
+    "cron",
+    "delete",
+    "lifecycle"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -19,7 +25,11 @@
         "expression": "0 0 * * *",
         "job_template": {
           "type": "cron.test.delete",
-          "args": [{"action": "daily_cleanup"}],
+          "args": [
+            {
+              "action": "daily_cleanup"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }
@@ -36,6 +46,7 @@
     {
       "id": "step-2",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-delete-test",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -51,6 +62,7 @@
       "id": "step-3",
       "description": "Verify the cron entry no longer appears in the list",
       "action": "GET",
+      "intent": "list-crons",
       "path": "/ojs/v1/cron",
       "headers": {
         "Accept": "application/openjobspec+json"

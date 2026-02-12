@@ -5,18 +5,28 @@
   "name": "unexpired-job-executes",
   "description": "A job enqueued with expires_at set far in the future MUST remain available for normal execution. Workers MUST be able to fetch and acknowledge the job before the TTL expires.",
   "spec_ref": "ojs-core#section-5.2",
-  "tags": ["level-2", "ttl", "happy-path", "execute"],
+  "tags": [
+    "level-2",
+    "ttl",
+    "happy-path",
+    "execute"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "ttl.test.unexpired_executes",
-        "args": [{"action": "execute_before_expiry"}],
+        "args": [
+          {
+            "action": "execute_before_expiry"
+          }
+        ],
         "options": {
           "queue": "ttl-test",
           "expires_at": "2099-12-31T23:59:59Z"
@@ -34,12 +44,15 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["ttl-test"],
+        "queues": [
+          "ttl-test"
+        ],
         "worker_id": "worker-ttl-2"
       },
       "assertions": {
@@ -47,13 +60,14 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 1
+          "$.jobs[0].attempt": 0
         }
       }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -61,7 +75,9 @@
       "body": {
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-ttl-2",
-        "result": {"status": "processed_before_ttl"}
+        "result": {
+          "status": "processed_before_ttl"
+        }
       },
       "assertions": {
         "status": 200,

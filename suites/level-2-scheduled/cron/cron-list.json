@@ -5,11 +5,17 @@
   "name": "cron-list",
   "description": "After registering multiple cron jobs, a GET to the cron list endpoint MUST return all registered cron entries. Each entry MUST include name, expression, enabled status, and next_run_at.",
   "spec_ref": "ojs-cron#section-2",
-  "tags": ["level-2", "cron", "list", "happy-path"],
+  "tags": [
+    "level-2",
+    "cron",
+    "list",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -19,7 +25,11 @@
         "expression": "0 * * * *",
         "job_template": {
           "type": "cron.test.list_alpha",
-          "args": [{"action": "hourly_task"}],
+          "args": [
+            {
+              "action": "hourly_task"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }
@@ -35,6 +45,7 @@
     {
       "id": "step-2",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -44,7 +55,11 @@
         "expression": "30 2 * * *",
         "job_template": {
           "type": "cron.test.list_beta",
-          "args": [{"action": "daily_task"}],
+          "args": [
+            {
+              "action": "daily_task"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }
@@ -60,6 +75,7 @@
     {
       "id": "step-3",
       "action": "GET",
+      "intent": "list-crons",
       "path": "/ojs/v1/cron",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -68,7 +84,6 @@
         "status": 200,
         "body": {
           "$.crons": "array:min:2",
-          "$.crons[*].name": "contains:cron-list-test-alpha",
           "$.crons[*].name": "contains:cron-list-test-beta"
         }
       }

@@ -5,12 +5,18 @@
   "name": "cron-special-expressions",
   "description": "The server MUST accept cron shorthand expressions such as @daily. When registered with @daily, the cron entry MUST be accepted and next_run_at MUST be calculated to the next midnight (00:00) occurrence.",
   "spec_ref": "ojs-cron#section-4",
-  "tags": ["level-2", "cron", "special-expressions", "shorthand"],
+  "tags": [
+    "level-2",
+    "cron",
+    "special-expressions",
+    "shorthand"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Register cron with @daily shorthand",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -20,7 +26,11 @@
         "expression": "@daily",
         "job_template": {
           "type": "cron.test.special_expression",
-          "args": [{"action": "daily_digest"}],
+          "args": [
+            {
+              "action": "daily_digest"
+            }
+          ],
           "options": {
             "queue": "cron-special-test"
           }
@@ -40,6 +50,7 @@
       "id": "step-2",
       "description": "Register cron with @hourly shorthand",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -49,7 +60,11 @@
         "expression": "@hourly",
         "job_template": {
           "type": "cron.test.special_expression",
-          "args": [{"action": "hourly_check"}],
+          "args": [
+            {
+              "action": "hourly_check"
+            }
+          ],
           "options": {
             "queue": "cron-special-test"
           }
@@ -69,6 +84,7 @@
       "id": "step-3",
       "description": "Register cron with @weekly shorthand",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -78,7 +94,11 @@
         "expression": "@weekly",
         "job_template": {
           "type": "cron.test.special_expression",
-          "args": [{"action": "weekly_summary"}],
+          "args": [
+            {
+              "action": "weekly_summary"
+            }
+          ],
           "options": {
             "queue": "cron-special-test"
           }
@@ -98,22 +118,31 @@
       "id": "step-4",
       "description": "Clean up daily",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-daily-shorthand",
-      "assertions": { "status": 200 }
+      "assertions": {
+        "status": 200
+      }
     },
     {
       "id": "step-5",
       "description": "Clean up hourly",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-hourly-shorthand",
-      "assertions": { "status": 200 }
+      "assertions": {
+        "status": 200
+      }
     },
     {
       "id": "step-6",
       "description": "Clean up weekly",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-weekly-shorthand",
-      "assertions": { "status": 200 }
+      "assertions": {
+        "status": 200
+      }
     }
   ]
 }

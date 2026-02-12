@@ -5,11 +5,17 @@
   "name": "cron-fires-on-schedule",
   "description": "A cron job registered with a per-minute expression MUST automatically create a job instance when the scheduled time arrives. After waiting for the cron to fire, a FETCH on the target queue MUST return the cron-generated job.",
   "spec_ref": "ojs-cron#section-2",
-  "tags": ["level-2", "cron", "fire", "scheduling"],
+  "tags": [
+    "level-2",
+    "cron",
+    "fire",
+    "scheduling"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -19,7 +25,11 @@
         "expression": "* * * * *",
         "job_template": {
           "type": "cron.test.fires_on_schedule",
-          "args": [{"action": "minute_tick"}],
+          "args": [
+            {
+              "action": "minute_tick"
+            }
+          ],
           "options": {
             "queue": "cron-fire-test"
           }
@@ -40,12 +50,15 @@
       "description": "Wait up to 65 seconds for the per-minute cron to fire",
       "delay_ms": 65000,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["cron-fire-test"],
+        "queues": [
+          "cron-fire-test"
+        ],
         "worker_id": "worker-cron-fire-1"
       },
       "assertions": {
@@ -61,6 +74,7 @@
       "id": "step-3",
       "description": "Clean up: delete the cron to stop future firings",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-fire-test",
       "headers": {
         "Accept": "application/openjobspec+json"

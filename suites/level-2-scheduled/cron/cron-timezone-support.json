@@ -5,11 +5,17 @@
   "name": "cron-timezone-support",
   "description": "A cron job registered with an IANA timezone MUST calculate next_run_at relative to that timezone. The server MUST accept valid IANA timezone identifiers and the returned next_run_at MUST reflect the specified timezone offset.",
   "spec_ref": "ojs-cron#section-2",
-  "tags": ["level-2", "cron", "timezone", "iana"],
+  "tags": [
+    "level-2",
+    "cron",
+    "timezone",
+    "iana"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -20,7 +26,12 @@
         "timezone": "Asia/Tokyo",
         "job_template": {
           "type": "cron.test.timezone",
-          "args": [{"action": "morning_report", "region": "tokyo"}],
+          "args": [
+            {
+              "action": "morning_report",
+              "region": "tokyo"
+            }
+          ],
           "options": {
             "queue": "cron-tz-test"
           }
@@ -41,6 +52,7 @@
       "id": "step-2",
       "description": "Register another cron with a different timezone for comparison",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -51,7 +63,12 @@
         "timezone": "America/New_York",
         "job_template": {
           "type": "cron.test.timezone",
-          "args": [{"action": "morning_report", "region": "new_york"}],
+          "args": [
+            {
+              "action": "morning_report",
+              "region": "new_york"
+            }
+          ],
           "options": {
             "queue": "cron-tz-test"
           }
@@ -71,6 +88,7 @@
       "id": "step-3",
       "description": "Verify that the two cron entries have different next_run_at values due to timezone difference",
       "action": "GET",
+      "intent": "list-crons",
       "path": "/ojs/v1/cron",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -78,7 +96,6 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.crons[*].name": "contains:cron-tz-test-tokyo",
           "$.crons[*].name": "contains:cron-tz-test-new-york"
         }
       }
@@ -87,6 +104,7 @@
       "id": "step-4",
       "description": "Clean up: delete Tokyo cron",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-tz-test-tokyo",
       "assertions": {
         "status": 200
@@ -96,6 +114,7 @@
       "id": "step-5",
       "description": "Clean up: delete New York cron",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-tz-test-new-york",
       "assertions": {
         "status": 200

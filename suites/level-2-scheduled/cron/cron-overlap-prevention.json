@@ -5,11 +5,17 @@
   "name": "cron-overlap-prevention",
   "description": "A cron job registered with overlap_policy='skip' MUST NOT create a new job instance if the previous instance is still running (in 'active' state). When the cron fires while the first occurrence is active, the new occurrence MUST be skipped.",
   "spec_ref": "ojs-cron#section-2",
-  "tags": ["level-2", "cron", "overlap", "skip-policy"],
+  "tags": [
+    "level-2",
+    "cron",
+    "overlap",
+    "skip-policy"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -20,7 +26,11 @@
         "overlap_policy": "skip",
         "job_template": {
           "type": "cron.test.overlap_prevention",
-          "args": [{"action": "long_running_task"}],
+          "args": [
+            {
+              "action": "long_running_task"
+            }
+          ],
           "options": {
             "queue": "cron-overlap-test"
           }
@@ -40,12 +50,15 @@
       "description": "Wait for the first cron occurrence to fire",
       "delay_ms": 65000,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["cron-overlap-test"],
+        "queues": [
+          "cron-overlap-test"
+        ],
         "worker_id": "worker-overlap-1"
       },
       "assertions": {
@@ -61,12 +74,15 @@
       "description": "Wait for the next cron tick while previous job is still active (not acked)",
       "delay_ms": 65000,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["cron-overlap-test"],
+        "queues": [
+          "cron-overlap-test"
+        ],
         "worker_id": "worker-overlap-2"
       },
       "assertions": {
@@ -80,6 +96,7 @@
       "id": "step-4",
       "description": "Clean up: delete the cron entry",
       "action": "DELETE",
+      "intent": "delete-cron",
       "path": "/ojs/v1/cron/cron-overlap-test",
       "headers": {
         "Accept": "application/openjobspec+json"

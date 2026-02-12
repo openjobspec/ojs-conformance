@@ -5,12 +5,18 @@
   "name": "cron-invalid-expression",
   "description": "Registering a cron job with an invalid cron expression MUST be rejected by the server with a 400 or 422 status code. The response MUST include an error message indicating the expression is invalid.",
   "spec_ref": "ojs-cron#section-3",
-  "tags": ["level-2", "cron", "validation", "error"],
+  "tags": [
+    "level-2",
+    "cron",
+    "validation",
+    "error"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Submit a cron with a syntactically invalid expression",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -20,7 +26,11 @@
         "expression": "not a valid cron",
         "job_template": {
           "type": "cron.test.invalid",
-          "args": [{"action": "should_not_register"}],
+          "args": [
+            {
+              "action": "should_not_register"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }
@@ -29,7 +39,7 @@
       "assertions": {
         "status": "one_of:400,422",
         "body": {
-          "$.error": "string:non_empty"
+          "$.error.message": "string:non_empty"
         }
       }
     },
@@ -37,6 +47,7 @@
       "id": "step-2",
       "description": "Submit a cron with too many fields (7 fields instead of 5)",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -46,7 +57,11 @@
         "expression": "0 0 0 0 0 0 0",
         "job_template": {
           "type": "cron.test.invalid_fields",
-          "args": [{"action": "should_not_register"}],
+          "args": [
+            {
+              "action": "should_not_register"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }
@@ -55,7 +70,7 @@
       "assertions": {
         "status": "one_of:400,422",
         "body": {
-          "$.error": "string:non_empty"
+          "$.error.message": "string:non_empty"
         }
       }
     },
@@ -63,6 +78,7 @@
       "id": "step-3",
       "description": "Submit a cron with out-of-range values",
       "action": "POST",
+      "intent": "register-cron",
       "path": "/ojs/v1/cron",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -72,7 +88,11 @@
         "expression": "99 25 32 13 8",
         "job_template": {
           "type": "cron.test.invalid_range",
-          "args": [{"action": "should_not_register"}],
+          "args": [
+            {
+              "action": "should_not_register"
+            }
+          ],
           "options": {
             "queue": "cron-test"
           }
@@ -81,7 +101,7 @@
       "assertions": {
         "status": "one_of:400,422",
         "body": {
-          "$.error": "string:non_empty"
+          "$.error.message": "string:non_empty"
         }
       }
     }
