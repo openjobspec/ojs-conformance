@@ -1,0 +1,96 @@
+{
+  "test_id": "L1-WRK-002",
+  "level": 1,
+  "category": "worker",
+  "name": "worker-quiet-signal",
+  "description": "The server MUST be able to send a 'quiet' directive via the heartbeat response. When a worker receives a 'quiet' directive, it indicates the server wants the worker to stop fetching new jobs but continue processing its current job. The worker MUST be able to receive and interpret this directive.",
+  "spec_ref": "ojs-worker-protocol#section-4",
+  "tags": ["level-1", "worker", "quiet", "directive"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "worker.test.quiet-signal",
+        "args": [{"action": "process_with_quiet"}],
+        "options": {
+          "queue": "worker-test",
+          "visibility_timeout": "PT30S",
+          "metadata": {
+            "test_directive": "quiet"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["worker-test"],
+        "worker_id": "worker-quiet-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Send heartbeat - server configured to respond with 'quiet' directive for this test job",
+      "delay_ms": 500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/heartbeat",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-quiet-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "active",
+          "$.directive": "quiet"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Worker can still complete the current job even after receiving quiet directive",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-quiet-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "test_id": "L1-WRK-001",
+  "level": 1,
+  "category": "worker",
+  "name": "worker-heartbeat",
+  "description": "A worker MUST be able to send a heartbeat for an active job. The heartbeat response MUST include a state directive indicating the current desired state for the worker (e.g., 'continue'). The heartbeat confirms the worker is still alive and processing.",
+  "spec_ref": "ojs-worker-protocol#section-4",
+  "tags": ["level-1", "worker", "heartbeat"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "worker.test.heartbeat",
+        "args": [{"action": "long_running_task"}],
+        "options": {
+          "queue": "worker-test",
+          "visibility_timeout": "PT30S"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["worker-test"],
+        "worker_id": "worker-heartbeat-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "delay_ms": 1000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/heartbeat",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-heartbeat-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "active",
+          "$.directive": "continue"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-heartbeat-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    }
+  ]
+}

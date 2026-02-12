@@ -1,0 +1,153 @@
+{
+  "test_id": "L1-WRK-003",
+  "level": 1,
+  "category": "worker",
+  "name": "worker-graceful-shutdown",
+  "description": "The server MUST be able to send a 'terminate' directive via the heartbeat response to signal a graceful shutdown. When a worker receives 'terminate', it SHOULD stop processing and release the job. The job MUST return to the 'available' state so another worker can pick it up.",
+  "spec_ref": "ojs-worker-protocol#section-7",
+  "tags": ["level-1", "worker", "terminate", "graceful-shutdown"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "worker.test.graceful-shutdown",
+        "args": [{"action": "process_with_terminate"}],
+        "options": {
+          "queue": "worker-test",
+          "visibility_timeout": "PT30S",
+          "metadata": {
+            "test_directive": "terminate"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["worker-test"],
+        "worker_id": "worker-terminate-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Send heartbeat - server responds with 'terminate' directive",
+      "delay_ms": 500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/heartbeat",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-terminate-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "active",
+          "$.directive": "terminate"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Worker releases the job by NACKing without an error (graceful release)",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-terminate-1",
+        "error": {
+          "type": "WorkerShutdown",
+          "message": "Worker received terminate directive - releasing job"
+        },
+        "requeue": true
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Another worker picks up the released job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["worker-test"],
+        "worker_id": "worker-terminate-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "worker_id": "worker-terminate-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    }
+  ]
+}
