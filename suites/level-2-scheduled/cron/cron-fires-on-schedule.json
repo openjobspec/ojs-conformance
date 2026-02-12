@@ -1,0 +1,73 @@
+{
+  "test_id": "L2-CRON-004",
+  "level": 2,
+  "category": "cron",
+  "name": "cron-fires-on-schedule",
+  "description": "A cron job registered with a per-minute expression MUST automatically create a job instance when the scheduled time arrives. After waiting for the cron to fire, a FETCH on the target queue MUST return the cron-generated job.",
+  "spec_ref": "ojs-cron#section-2",
+  "tags": ["level-2", "cron", "fire", "scheduling"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-fire-test",
+        "expression": "* * * * *",
+        "job_template": {
+          "type": "cron.test.fires_on_schedule",
+          "args": [{"action": "minute_tick"}],
+          "options": {
+            "queue": "cron-fire-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-fire-test",
+          "$.cron.expression": "* * * * *",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Wait up to 65 seconds for the per-minute cron to fire",
+      "delay_ms": 65000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["cron-fire-test"],
+        "worker_id": "worker-cron-fire-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "cron.test.fires_on_schedule",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0].action": "minute_tick"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Clean up: delete the cron to stop future firings",
+      "action": "DELETE",
+      "path": "/ojs/v1/cron/cron-fire-test",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200
+      }
+    }
+  ]
+}

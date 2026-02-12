@@ -1,0 +1,77 @@
+{
+  "test_id": "L2-CRON-002",
+  "level": 2,
+  "category": "cron",
+  "name": "cron-list",
+  "description": "After registering multiple cron jobs, a GET to the cron list endpoint MUST return all registered cron entries. Each entry MUST include name, expression, enabled status, and next_run_at.",
+  "spec_ref": "ojs-cron#section-2",
+  "tags": ["level-2", "cron", "list", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-list-test-alpha",
+        "expression": "0 * * * *",
+        "job_template": {
+          "type": "cron.test.list_alpha",
+          "args": [{"action": "hourly_task"}],
+          "options": {
+            "queue": "cron-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-list-test-alpha"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-list-test-beta",
+        "expression": "30 2 * * *",
+        "job_template": {
+          "type": "cron.test.list_beta",
+          "args": [{"action": "daily_task"}],
+          "options": {
+            "queue": "cron-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-list-test-beta"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.crons": "array:min:2",
+          "$.crons[*].name": "contains:cron-list-test-alpha",
+          "$.crons[*].name": "contains:cron-list-test-beta"
+        }
+      }
+    }
+  ]
+}

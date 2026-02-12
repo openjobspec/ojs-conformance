@@ -1,0 +1,105 @@
+{
+  "test_id": "L2-TZ-001",
+  "level": 2,
+  "category": "cron",
+  "name": "cron-timezone-support",
+  "description": "A cron job registered with an IANA timezone MUST calculate next_run_at relative to that timezone. The server MUST accept valid IANA timezone identifiers and the returned next_run_at MUST reflect the specified timezone offset.",
+  "spec_ref": "ojs-cron#section-2",
+  "tags": ["level-2", "cron", "timezone", "iana"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-tz-test-tokyo",
+        "expression": "0 9 * * *",
+        "timezone": "Asia/Tokyo",
+        "job_template": {
+          "type": "cron.test.timezone",
+          "args": [{"action": "morning_report", "region": "tokyo"}],
+          "options": {
+            "queue": "cron-tz-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-tz-test-tokyo",
+          "$.cron.expression": "0 9 * * *",
+          "$.cron.timezone": "Asia/Tokyo",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Register another cron with a different timezone for comparison",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-tz-test-new-york",
+        "expression": "0 9 * * *",
+        "timezone": "America/New_York",
+        "job_template": {
+          "type": "cron.test.timezone",
+          "args": [{"action": "morning_report", "region": "new_york"}],
+          "options": {
+            "queue": "cron-tz-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-tz-test-new-york",
+          "$.cron.timezone": "America/New_York",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Verify that the two cron entries have different next_run_at values due to timezone difference",
+      "action": "GET",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.crons[*].name": "contains:cron-tz-test-tokyo",
+          "$.crons[*].name": "contains:cron-tz-test-new-york"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Clean up: delete Tokyo cron",
+      "action": "DELETE",
+      "path": "/ojs/v1/cron/cron-tz-test-tokyo",
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Clean up: delete New York cron",
+      "action": "DELETE",
+      "path": "/ojs/v1/cron/cron-tz-test-new-york",
+      "assertions": {
+        "status": 200
+      }
+    }
+  ]
+}

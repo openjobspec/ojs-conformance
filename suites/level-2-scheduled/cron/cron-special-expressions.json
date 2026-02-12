@@ -1,0 +1,119 @@
+{
+  "test_id": "L2-CRON-007",
+  "level": 2,
+  "category": "cron",
+  "name": "cron-special-expressions",
+  "description": "The server MUST accept cron shorthand expressions such as @daily. When registered with @daily, the cron entry MUST be accepted and next_run_at MUST be calculated to the next midnight (00:00) occurrence.",
+  "spec_ref": "ojs-cron#section-4",
+  "tags": ["level-2", "cron", "special-expressions", "shorthand"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Register cron with @daily shorthand",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-daily-shorthand",
+        "expression": "@daily",
+        "job_template": {
+          "type": "cron.test.special_expression",
+          "args": [{"action": "daily_digest"}],
+          "options": {
+            "queue": "cron-special-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-daily-shorthand",
+          "$.cron.expression": "@daily",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Register cron with @hourly shorthand",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-hourly-shorthand",
+        "expression": "@hourly",
+        "job_template": {
+          "type": "cron.test.special_expression",
+          "args": [{"action": "hourly_check"}],
+          "options": {
+            "queue": "cron-special-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-hourly-shorthand",
+          "$.cron.expression": "@hourly",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Register cron with @weekly shorthand",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "cron-weekly-shorthand",
+        "expression": "@weekly",
+        "job_template": {
+          "type": "cron.test.special_expression",
+          "args": [{"action": "weekly_summary"}],
+          "options": {
+            "queue": "cron-special-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "cron-weekly-shorthand",
+          "$.cron.expression": "@weekly",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Clean up daily",
+      "action": "DELETE",
+      "path": "/ojs/v1/cron/cron-daily-shorthand",
+      "assertions": { "status": 200 }
+    },
+    {
+      "id": "step-5",
+      "description": "Clean up hourly",
+      "action": "DELETE",
+      "path": "/ojs/v1/cron/cron-hourly-shorthand",
+      "assertions": { "status": 200 }
+    },
+    {
+      "id": "step-6",
+      "description": "Clean up weekly",
+      "action": "DELETE",
+      "path": "/ojs/v1/cron/cron-weekly-shorthand",
+      "assertions": { "status": 200 }
+    }
+  ]
+}

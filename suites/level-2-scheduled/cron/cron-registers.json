@@ -1,0 +1,40 @@
+{
+  "test_id": "L2-CRON-001",
+  "level": 2,
+  "category": "cron",
+  "name": "cron-registers",
+  "description": "Registering a cron job via POST MUST return 201 with the cron entry containing name, expression, next_run_at timestamp, and enabled=true by default.",
+  "spec_ref": "ojs-cron#section-2",
+  "tags": ["level-2", "cron", "register", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/cron",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "test-cron-register",
+        "expression": "*/5 * * * *",
+        "job_template": {
+          "type": "cron.test.register",
+          "args": [{"action": "periodic_task"}],
+          "options": {
+            "queue": "cron-test"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.cron.name": "test-cron-register",
+          "$.cron.expression": "*/5 * * * *",
+          "$.cron.next_run_at": "string:datetime",
+          "$.cron.enabled": true,
+          "$.cron.created_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}
