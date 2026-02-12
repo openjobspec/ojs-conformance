@@ -1,0 +1,142 @@
+{
+  "test_id": "L0-LC-013",
+  "level": 0,
+  "category": "lifecycle",
+  "name": "completed-is-terminal",
+  "description": "The 'completed' state is a terminal state. A completed job MUST NOT transition to any other state. All mutation operations (ACK, NACK, CANCEL) MUST be rejected with a 409 Conflict. The job MUST retain its completed_at timestamp and state indefinitely.",
+  "spec_ref": "ojs-core#section-6.1",
+  "tags": ["level-0", "lifecycle", "terminal", "completed", "negative"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "lifecycle.test.completed_terminal",
+        "args": [{"action": "verify_completed_is_terminal"}],
+        "options": {
+          "queue": "default"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["default"]
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {"outcome": "success"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed",
+          "$.job.completed_at": "string:datetime"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}"
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "error": {
+          "code": "handler_error",
+          "message": "Attempted NACK on completed job"
+        }
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "action": "DELETE",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed",
+          "$.job.completed_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}

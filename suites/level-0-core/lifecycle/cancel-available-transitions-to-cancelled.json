@@ -1,0 +1,65 @@
+{
+  "test_id": "L0-LC-007",
+  "level": 0,
+  "category": "lifecycle",
+  "name": "cancel-available-transitions-to-cancelled",
+  "description": "Cancelling a job in the 'available' state MUST transition it to the 'cancelled' terminal state. The job MUST no longer be fetchable by workers after cancellation.",
+  "spec_ref": "ojs-core#section-6.2",
+  "tags": ["level-0", "lifecycle", "cancel", "cancelled", "terminal"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "lifecycle.test.cancel_available",
+        "args": [{"action": "verify_cancel_from_available"}],
+        "options": {
+          "queue": "default"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "DELETE",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "cancelled"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "cancelled",
+          "$.job.attempt": 0,
+          "$.job.completed_at": "absent"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "test_id": "L0-LC-010",
+  "level": 0,
+  "category": "lifecycle",
+  "name": "invalid-transition-completed-to-any",
+  "description": "A job in the 'completed' terminal state MUST NOT accept any further state transitions. Attempting to NACK (fail) a completed job MUST be rejected with an error. The job state MUST remain 'completed'.",
+  "spec_ref": "ojs-core#section-6.2",
+  "tags": ["level-0", "lifecycle", "invalid-transition", "terminal", "completed", "negative"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "lifecycle.test.completed_no_transition",
+        "args": [{"action": "complete_then_try_fail"}],
+        "options": {
+          "queue": "default"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["default"]
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "error": {
+          "code": "handler_error",
+          "message": "Attempted failure after completion"
+        }
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed",
+          "$.job.completed_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}

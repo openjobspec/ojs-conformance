@@ -1,0 +1,90 @@
+{
+  "test_id": "L0-LC-004",
+  "level": 0,
+  "category": "lifecycle",
+  "name": "ack-transitions-to-completed",
+  "description": "Acknowledging (ACK) an active job MUST transition it to the 'completed' terminal state. The completed_at timestamp MUST be set, and the optional result payload MUST be persisted.",
+  "spec_ref": "ojs-core#section-6.2",
+  "tags": ["level-0", "lifecycle", "ack", "completed", "terminal"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "lifecycle.test.ack_complete",
+        "args": [{"action": "verify_completed_state"}],
+        "options": {
+          "queue": "default"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["default"]
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {"status": "ok", "processed": true}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed",
+          "$.job.completed_at": "string:datetime"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed",
+          "$.job.attempt": 1,
+          "$.job.completed_at": "string:datetime",
+          "$.job.started_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}
