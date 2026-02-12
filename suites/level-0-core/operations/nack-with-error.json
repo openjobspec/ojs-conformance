@@ -1,0 +1,105 @@
+{
+  "test_id": "L0-OPS-012",
+  "level": 0,
+  "category": "operations",
+  "name": "nack-with-error",
+  "description": "PUSH a job, FETCH it, then FAIL with a structured error containing code, message, retryable flag, and details. Verify the error is stored and retrievable via INFO.",
+  "spec_ref": "ojs-core#section-7.4",
+  "tags": ["level-0", "operations", "nack", "fail", "error"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.fail_always",
+        "args": [{"action": "nack-with-error-test"}],
+        "options": {
+          "queue": "conformance-nack-error-test",
+          "retry": {
+            "max_attempts": 3
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true},
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-nack-error-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "error": {
+          "code": "handler_error",
+          "message": "Connection refused to smtp.example.com:587 after 10000ms timeout",
+          "retryable": true,
+          "details": {
+            "error_class": "SmtpConnectionError",
+            "smtp_host": "smtp.example.com",
+            "smtp_port": 587,
+            "timeout_ms": 10000
+          }
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job_id": "{{steps.step-1.response.body.job.id}}",
+          "$.state": {"$in": ["retryable", "discarded"]},
+          "$.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.error": {"$exists": true},
+          "$.job.error.type": {"$exists": true},
+          "$.job.error.message": {"$exists": true, "$type": "string"}
+        }
+      }
+    }
+  ]
+}

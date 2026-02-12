@@ -1,0 +1,28 @@
+{
+  "test_id": "L0-OPS-016",
+  "level": 0,
+  "category": "operations",
+  "name": "cancel-nonexistent-job",
+  "description": "Attempt to CANCEL a job using a random UUID that does not exist in the system. The server MUST respond with 404 Not Found and a structured error.",
+  "spec_ref": "ojs-core#section-7.6",
+  "tags": ["level-0", "operations", "cancel", "not-found", "error"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "DELETE",
+      "path": "/ojs/v1/jobs/01961111-aaaa-7bbb-8ccc-dddddddddddd",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 404,
+        "body": {
+          "$.error": {"$exists": true},
+          "$.error.code": "not_found",
+          "$.error.message": {"$exists": true, "$type": "string"},
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}

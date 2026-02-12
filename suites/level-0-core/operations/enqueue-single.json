@@ -1,0 +1,44 @@
+{
+  "test_id": "L0-OPS-001",
+  "level": 0,
+  "category": "operations",
+  "name": "enqueue-single",
+  "description": "PUSH a single job and verify the server returns a 201 response with a complete job envelope containing all required system-managed fields (id, type, queue, state, specversion, created_at, enqueued_at).",
+  "spec_ref": "ojs-core#section-7.1",
+  "tags": ["level-0", "operations", "push", "enqueue"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": [{"message": "hello world"}],
+        "meta": {
+          "trace_id": "test-enqueue-single-001"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/openjobspec+json"
+        },
+        "body": {
+          "$.job.id": {"$match": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "$.job.type": "test.echo",
+          "$.job.queue": "default",
+          "$.job.state": "available",
+          "$.job.args[0].message": "hello world",
+          "$.job.attempt": 0,
+          "$.job.created_at": {"$exists": true},
+          "$.job.enqueued_at": {"$exists": true},
+          "$.job.meta.trace_id": "test-enqueue-single-001"
+        }
+      }
+    }
+  ]
+}

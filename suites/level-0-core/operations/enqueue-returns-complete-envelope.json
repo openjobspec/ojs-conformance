@@ -1,0 +1,67 @@
+{
+  "test_id": "L0-OPS-002",
+  "level": 0,
+  "category": "operations",
+  "name": "enqueue-returns-complete-envelope",
+  "description": "PUSH a job with full options and verify the response contains ALL system-managed fields including id, type, queue, state, attempt, priority, max_attempts, created_at, and enqueued_at. Confirms the server populates every expected field on the returned envelope.",
+  "spec_ref": "ojs-core#section-7.1",
+  "tags": ["level-0", "operations", "push", "envelope"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": ["arg1", 42, true, null, {"nested": "value"}],
+        "meta": {
+          "trace_id": "test-complete-envelope-002",
+          "user_id": "usr_test_001",
+          "tenant_id": "tenant_acme"
+        },
+        "options": {
+          "queue": "default",
+          "priority": 0,
+          "timeout_ms": 30000,
+          "retry": {
+            "max_attempts": 3,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 2.0,
+            "max_interval": "PT5M",
+            "jitter": true
+          },
+          "tags": ["conformance", "envelope-test"]
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/openjobspec+json"
+        },
+        "body": {
+          "$.job.id": {"$match": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "$.job.type": "test.echo",
+          "$.job.queue": "default",
+          "$.job.state": "available",
+          "$.job.args": ["arg1", 42, true, null, {"nested": "value"}],
+          "$.job.meta.trace_id": "test-complete-envelope-002",
+          "$.job.meta.user_id": "usr_test_001",
+          "$.job.meta.tenant_id": "tenant_acme",
+          "$.job.priority": 0,
+          "$.job.attempt": 0,
+          "$.job.max_attempts": 3,
+          "$.job.created_at": {"$exists": true, "$type": "string"},
+          "$.job.enqueued_at": {"$exists": true, "$type": "string"},
+          "$.job.started_at": {"$exists": false},
+          "$.job.completed_at": {"$exists": false},
+          "$.job.error": {"$exists": false},
+          "$.job.result": {"$exists": false}
+        }
+      }
+    }
+  ]
+}

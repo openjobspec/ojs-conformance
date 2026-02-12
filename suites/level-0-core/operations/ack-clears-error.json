@@ -1,0 +1,151 @@
+{
+  "test_id": "L0-OPS-011",
+  "level": 0,
+  "category": "operations",
+  "name": "ack-clears-error",
+  "description": "PUSH a job with retry enabled, FETCH and FAIL it so it becomes retryable, wait for retry, FETCH again, then ACK. Verify that the error field is cleared upon successful completion and the job transitions to state=completed.",
+  "spec_ref": "ojs-core#section-7.3",
+  "tags": ["level-0", "operations", "ack", "error", "retry", "clear"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.fail_once",
+        "args": [{"action": "ack-clears-error-test"}],
+        "options": {
+          "queue": "conformance-ack-clears-error",
+          "retry": {
+            "max_attempts": 3,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "jitter": false
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true},
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-ack-clears-error"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "error": {
+          "code": "handler_error",
+          "message": "Simulated transient failure for ack-clears-error test",
+          "retryable": true
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "retryable",
+          "$.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "WAIT",
+      "duration_ms": 2000,
+      "description": "Wait for retry interval to elapse so the job becomes available again."
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-ack-clears-error"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 2
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {
+          "recovered": true
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.acknowledged": true,
+          "$.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed",
+          "$.job.error": {"$exists": false},
+          "$.job.result.recovered": true,
+          "$.job.completed_at": {"$exists": true}
+        }
+      }
+    }
+  ]
+}

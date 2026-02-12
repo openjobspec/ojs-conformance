@@ -1,0 +1,33 @@
+{
+  "test_id": "L0-OPS-005",
+  "level": 0,
+  "category": "operations",
+  "name": "fetch-empty-queue",
+  "description": "FETCH from a queue that has no available jobs. The server MUST return 200 OK with an empty jobs array, or 204 No Content. An empty queue is a normal operational state, not an error.",
+  "spec_ref": "ojs-core#section-7.2",
+  "tags": ["level-0", "operations", "fetch", "empty"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-empty-queue-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": {"$in": [200, 204]},
+        "body": {
+          "$or": [
+            {"$.jobs": {"$size": 0}},
+            {"$empty": true}
+          ]
+        }
+      }
+    }
+  ]
+}

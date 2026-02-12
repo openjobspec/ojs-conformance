@@ -1,0 +1,96 @@
+{
+  "test_id": "L0-OPS-017",
+  "level": 0,
+  "category": "operations",
+  "name": "cancel-terminal-job-idempotent",
+  "description": "Complete a job through the full lifecycle (PUSH, FETCH, ACK), then attempt to CANCEL it. The server SHOULD respond with either 200 OK (idempotent success) or 409 Conflict since the job is already in a terminal state.",
+  "spec_ref": "ojs-core#section-7.6",
+  "tags": ["level-0", "operations", "cancel", "terminal", "idempotent"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.noop",
+        "args": [{"action": "cancel-terminal-test"}],
+        "options": {
+          "queue": "conformance-cancel-terminal-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true},
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-cancel-terminal-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {"completed": true}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.acknowledged": true,
+          "$.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "DELETE",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": {"$in": [200, 409]},
+        "body": {
+          "$or": [
+            {
+              "$.job.state": {"$in": ["completed", "cancelled"]}
+            },
+            {
+              "$.error.code": "invalid_request",
+              "$.error.message": {"$exists": true}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

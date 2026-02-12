@@ -1,0 +1,137 @@
+{
+  "test_id": "L0-OPS-006",
+  "level": 0,
+  "category": "operations",
+  "name": "fetch-fifo-ordering",
+  "description": "PUSH 3 jobs in sequence to the same queue, then FETCH them one at a time. Verify that jobs are returned in FIFO order (first in, first out), meaning the first enqueued job is fetched first.",
+  "spec_ref": "ojs-core#section-7.2",
+  "tags": ["level-0", "operations", "fetch", "ordering", "fifo"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.noop",
+        "args": [{"order": 1}],
+        "options": {
+          "queue": "conformance-fifo-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true}
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.noop",
+        "args": [{"order": 2}],
+        "options": {
+          "queue": "conformance-fifo-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true}
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.noop",
+        "args": [{"order": 3}],
+        "options": {
+          "queue": "conformance-fifo-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true}
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-fifo-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].args[0].order": 1
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-fifo-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-2.response.body.job.id}}",
+          "$.jobs[0].args[0].order": 2
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-fifo-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-3.response.body.job.id}}",
+          "$.jobs[0].args[0].order": 3
+        }
+      }
+    }
+  ]
+}

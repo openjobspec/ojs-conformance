@@ -1,0 +1,84 @@
+{
+  "test_id": "L0-OPS-008",
+  "level": 0,
+  "category": "operations",
+  "name": "fetch-exclusive-claim",
+  "description": "PUSH a single job, then simulate two concurrent FETCH requests from different workers. Only one worker should receive the job (at-most-once delivery per fetch). The server MUST atomically transition the job from available to active to prevent double-delivery.",
+  "spec_ref": "ojs-core#section-7.2",
+  "tags": ["level-0", "operations", "fetch", "exclusive", "concurrency", "atomicity"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.slow",
+        "args": [{"duration_ms": 5000}],
+        "options": {
+          "queue": "conformance-exclusive-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true},
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "parallel_with": "step-3",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-exclusive-test"],
+        "worker_id": "test-worker-alpha"
+      },
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "parallel_with": "step-2",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-exclusive-test"],
+        "worker_id": "test-worker-beta"
+      },
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "ASSERT",
+      "description": "Exactly one of the two concurrent fetches should have received the job, and the other should have received an empty jobs array.",
+      "assertions": {
+        "exclusive_claim": {
+          "job_id": "{{steps.step-1.response.body.job.id}}",
+          "fetches": [
+            "{{steps.step-2.response.body.jobs}}",
+            "{{steps.step-3.response.body.jobs}}"
+          ],
+          "exactly_one_has_job": true,
+          "exactly_one_empty": true
+        }
+      }
+    }
+  ]
+}

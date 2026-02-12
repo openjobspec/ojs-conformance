@@ -1,0 +1,104 @@
+{
+  "test_id": "L0-OPS-010",
+  "level": 0,
+  "category": "operations",
+  "name": "ack-with-result",
+  "description": "ACK a job with a complex result value, then retrieve the job via INFO. Verify the result is stored and retrievable in the full job envelope.",
+  "spec_ref": "ojs-core#section-7.3",
+  "tags": ["level-0", "operations", "ack", "result", "info"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": [{"data": "ack-result-test"}],
+        "options": {
+          "queue": "conformance-ack-result-test"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true}
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-ack-result-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {
+          "processed": true,
+          "records_count": 42,
+          "summary": "All records processed successfully",
+          "details": {
+            "created": 10,
+            "updated": 30,
+            "skipped": 2
+          }
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.acknowledged": true,
+          "$.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.state": "completed",
+          "$.job.result.processed": true,
+          "$.job.result.records_count": 42,
+          "$.job.result.summary": "All records processed successfully",
+          "$.job.result.details.created": 10,
+          "$.job.result.details.updated": 30,
+          "$.job.result.details.skipped": 2,
+          "$.job.completed_at": {"$exists": true}
+        }
+      }
+    }
+  ]
+}

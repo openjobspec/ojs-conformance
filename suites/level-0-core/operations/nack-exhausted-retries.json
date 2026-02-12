@@ -1,0 +1,109 @@
+{
+  "test_id": "L0-OPS-014",
+  "level": 0,
+  "category": "operations",
+  "name": "nack-exhausted-retries",
+  "description": "PUSH a job with max_attempts=1 (no retries), FETCH it, then FAIL. Since the single allowed attempt is exhausted, verify the job transitions to state=discarded and sets discarded_at.",
+  "spec_ref": "ojs-core#section-7.4",
+  "tags": ["level-0", "operations", "nack", "fail", "discarded", "exhausted"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.fail_always",
+        "args": [{"action": "nack-exhausted-test"}],
+        "options": {
+          "queue": "conformance-nack-exhausted-test",
+          "retry": {
+            "max_attempts": 1
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": {"$exists": true},
+          "$.job.state": "available",
+          "$.job.max_attempts": 1
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-nack-exhausted-test"],
+        "worker_id": "test-worker-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "error": {
+          "code": "handler_error",
+          "message": "Fatal processing error: invalid data format in payload",
+          "retryable": false,
+          "details": {
+            "error_class": "DataFormatError",
+            "field": "payload.data",
+            "expected": "base64",
+            "received": "plaintext"
+          }
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job_id": "{{steps.step-1.response.body.job.id}}",
+          "$.state": "discarded",
+          "$.attempt": 1,
+          "$.max_attempts": 1,
+          "$.discarded_at": {"$exists": true, "$type": "string"}
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded",
+          "$.job.error": {"$exists": true},
+          "$.job.error.message": {"$exists": true, "$type": "string"},
+          "$.job.completed_at": {"$exists": true}
+        }
+      }
+    }
+  ]
+}
