@@ -5,12 +5,18 @@
   "name": "group-independent-execution",
   "description": "In a group workflow, each job MUST execute independently. If one job fails, the sibling jobs MUST NOT be affected and MUST continue to be fetchable and completable. Failure of one does NOT cancel or block the others.",
   "spec_ref": "ojs-workflows#section-5",
-  "tags": ["level-3", "group", "independence", "isolation"],
+  "tags": [
+    "level-3",
+    "group",
+    "independence",
+    "isolation"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Create a group workflow with 3 jobs",
       "action": "POST",
+      "intent": "create-workflow",
       "path": "/ojs/v1/workflows",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -21,21 +27,39 @@
         "jobs": [
           {
             "type": "group.test.independent_a",
-            "args": [{"task": "a"}],
-            "options": { "queue": "group-indep-test" }
+            "args": [
+              {
+                "task": "a"
+              }
+            ],
+            "options": {
+              "queue": "group-indep-test"
+            }
           },
           {
             "type": "group.test.independent_b",
-            "args": [{"task": "b_will_fail"}],
+            "args": [
+              {
+                "task": "b_will_fail"
+              }
+            ],
             "options": {
               "queue": "group-indep-test",
-              "retry_policy": { "max_attempts": 1 }
+              "retry_policy": {
+                "max_attempts": 1
+              }
             }
           },
           {
             "type": "group.test.independent_c",
-            "args": [{"task": "c"}],
-            "options": { "queue": "group-indep-test" }
+            "args": [
+              {
+                "task": "c"
+              }
+            ],
+            "options": {
+              "queue": "group-indep-test"
+            }
           }
         ]
       },
@@ -53,12 +77,15 @@
       "id": "step-2",
       "description": "Fetch first job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["group-indep-test"],
+        "queues": [
+          "group-indep-test"
+        ],
         "worker_id": "worker-indep-1"
       },
       "assertions": {
@@ -72,6 +99,7 @@
       "id": "step-3",
       "description": "NACK first fetched job to trigger failure",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -92,12 +120,15 @@
       "id": "step-4",
       "description": "Fetch next job - should still be available despite sibling failure",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["group-indep-test"],
+        "queues": [
+          "group-indep-test"
+        ],
         "worker_id": "worker-indep-2"
       },
       "assertions": {
@@ -111,6 +142,7 @@
       "id": "step-5",
       "description": "Complete the second fetched job successfully",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -118,7 +150,9 @@
       "body": {
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-indep-2",
-        "result": {"status": "done_despite_sibling_failure"}
+        "result": {
+          "status": "done_despite_sibling_failure"
+        }
       },
       "assertions": {
         "status": 200,
@@ -131,12 +165,15 @@
       "id": "step-6",
       "description": "Fetch the third job - should also still be available",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["group-indep-test"],
+        "queues": [
+          "group-indep-test"
+        ],
         "worker_id": "worker-indep-3"
       },
       "assertions": {
@@ -150,6 +187,7 @@
       "id": "step-7",
       "description": "Complete the third job successfully",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -157,7 +195,9 @@
       "body": {
         "job_id": "{{steps.step-6.response.body.jobs[0].id}}",
         "worker_id": "worker-indep-3",
-        "result": {"status": "done_despite_sibling_failure"}
+        "result": {
+          "status": "done_despite_sibling_failure"
+        }
       },
       "assertions": {
         "status": 200,

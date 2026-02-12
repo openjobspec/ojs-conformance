@@ -5,12 +5,18 @@
   "name": "batch-no-success-on-failure",
   "description": "A batch workflow with both on_success and on_failure callbacks MUST fire on_failure but NOT on_success when at least one job fails. The on_success callback MUST NOT be enqueued when any job has failed.",
   "spec_ref": "ojs-workflows#section-6",
-  "tags": ["level-3", "batch", "callback", "mutual-exclusion"],
+  "tags": [
+    "level-3",
+    "batch",
+    "callback",
+    "mutual-exclusion"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Create a batch with both on_success and on_failure callbacks",
       "action": "POST",
+      "intent": "create-workflow",
       "path": "/ojs/v1/workflows",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -21,28 +27,52 @@
         "jobs": [
           {
             "type": "batch.test.nosuccess_a",
-            "args": [{"task": "a"}],
-            "options": { "queue": "batch-nosuccess-test" }
+            "args": [
+              {
+                "task": "a"
+              }
+            ],
+            "options": {
+              "queue": "batch-nosuccess-test"
+            }
           },
           {
             "type": "batch.test.nosuccess_b",
-            "args": [{"task": "b_will_fail"}],
+            "args": [
+              {
+                "task": "b_will_fail"
+              }
+            ],
             "options": {
               "queue": "batch-nosuccess-test",
-              "retry_policy": { "max_attempts": 1 }
+              "retry_policy": {
+                "max_attempts": 1
+              }
             }
           }
         ],
         "callbacks": {
           "on_success": {
             "type": "batch.test.should_not_fire_success",
-            "args": [{"action": "success_notification"}],
-            "options": { "queue": "batch-nosuccess-cb-test" }
+            "args": [
+              {
+                "action": "success_notification"
+              }
+            ],
+            "options": {
+              "queue": "batch-nosuccess-cb-test"
+            }
           },
           "on_failure": {
             "type": "batch.test.should_fire_failure",
-            "args": [{"action": "failure_notification"}],
-            "options": { "queue": "batch-nosuccess-fail-cb-test" }
+            "args": [
+              {
+                "action": "failure_notification"
+              }
+            ],
+            "options": {
+              "queue": "batch-nosuccess-fail-cb-test"
+            }
           }
         }
       },
@@ -59,37 +89,76 @@
       "id": "step-2",
       "description": "Fetch and complete first job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-nosuccess-test"], "worker_id": "worker-bat-ns-1" },
-      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-nosuccess-test"
+        ],
+        "worker_id": "worker-bat-ns-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
-      "headers": { "Content-Type": "application/openjobspec+json" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
       "body": {
         "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
         "worker_id": "worker-bat-ns-1",
-        "result": {"status": "done"}
+        "result": {
+          "status": "done"
+        }
       },
-      "assertions": { "status": 200, "body": { "$.job.state": "completed" } }
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
     },
     {
       "id": "step-4",
       "description": "Fetch and fail second job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-nosuccess-test"], "worker_id": "worker-bat-ns-2" },
-      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-nosuccess-test"
+        ],
+        "worker_id": "worker-bat-ns-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
     },
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
-      "headers": { "Content-Type": "application/openjobspec+json" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
       "body": {
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-bat-ns-2",
@@ -98,16 +167,26 @@
           "message": "Failure to verify on_success does not fire"
         }
       },
-      "assertions": { "status": 200 }
+      "assertions": {
+        "status": 200
+      }
     },
     {
       "id": "step-6",
       "description": "Verify on_failure callback was enqueued",
       "delay_ms": 1000,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-nosuccess-fail-cb-test"], "worker_id": "worker-bat-ns-cb-1" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-nosuccess-fail-cb-test"
+        ],
+        "worker_id": "worker-bat-ns-cb-1"
+      },
       "assertions": {
         "status": 200,
         "body": {
@@ -120,9 +199,17 @@
       "id": "step-7",
       "description": "Verify on_success callback was NOT enqueued",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-nosuccess-cb-test"], "worker_id": "worker-bat-ns-cb-2" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-nosuccess-cb-test"
+        ],
+        "worker_id": "worker-bat-ns-cb-2"
+      },
       "assertions": {
         "status": 200,
         "body": {

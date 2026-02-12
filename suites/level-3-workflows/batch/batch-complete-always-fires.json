@@ -5,12 +5,19 @@
   "name": "batch-complete-always-fires",
   "description": "A batch workflow with on_complete, on_success, and on_failure callbacks MUST always fire on_complete regardless of whether the batch succeeded or failed. The on_complete callback fires in both success and failure scenarios.",
   "spec_ref": "ojs-workflows#section-6",
-  "tags": ["level-3", "batch", "callback", "on-complete", "always-fires"],
+  "tags": [
+    "level-3",
+    "batch",
+    "callback",
+    "on-complete",
+    "always-fires"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Create a batch with all three callbacks where one job will fail",
       "action": "POST",
+      "intent": "create-workflow",
       "path": "/ojs/v1/workflows",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -21,33 +28,63 @@
         "jobs": [
           {
             "type": "batch.test.always_job_ok",
-            "args": [{"task": "succeed"}],
-            "options": { "queue": "batch-always-test" }
+            "args": [
+              {
+                "task": "succeed"
+              }
+            ],
+            "options": {
+              "queue": "batch-always-test"
+            }
           },
           {
             "type": "batch.test.always_job_fail",
-            "args": [{"task": "fail"}],
+            "args": [
+              {
+                "task": "fail"
+              }
+            ],
             "options": {
               "queue": "batch-always-test",
-              "retry_policy": { "max_attempts": 1 }
+              "retry_policy": {
+                "max_attempts": 1
+              }
             }
           }
         ],
         "callbacks": {
           "on_success": {
             "type": "batch.test.always_success_cb",
-            "args": [{"action": "success"}],
-            "options": { "queue": "batch-always-success-cb" }
+            "args": [
+              {
+                "action": "success"
+              }
+            ],
+            "options": {
+              "queue": "batch-always-success-cb"
+            }
           },
           "on_failure": {
             "type": "batch.test.always_failure_cb",
-            "args": [{"action": "failure"}],
-            "options": { "queue": "batch-always-failure-cb" }
+            "args": [
+              {
+                "action": "failure"
+              }
+            ],
+            "options": {
+              "queue": "batch-always-failure-cb"
+            }
           },
           "on_complete": {
             "type": "batch.test.always_complete_cb",
-            "args": [{"action": "complete"}],
-            "options": { "queue": "batch-always-complete-cb" }
+            "args": [
+              {
+                "action": "complete"
+              }
+            ],
+            "options": {
+              "queue": "batch-always-complete-cb"
+            }
           }
         }
       },
@@ -64,37 +101,76 @@
       "id": "step-2",
       "description": "Fetch and succeed first job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-always-test"], "worker_id": "worker-bat-always-1" },
-      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-always-test"
+        ],
+        "worker_id": "worker-bat-always-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
     },
     {
       "id": "step-3",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
-      "headers": { "Content-Type": "application/openjobspec+json" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
       "body": {
         "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
         "worker_id": "worker-bat-always-1",
-        "result": {"status": "done"}
+        "result": {
+          "status": "done"
+        }
       },
-      "assertions": { "status": 200, "body": { "$.job.state": "completed" } }
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
     },
     {
       "id": "step-4",
       "description": "Fetch and fail second job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-always-test"], "worker_id": "worker-bat-always-2" },
-      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-always-test"
+        ],
+        "worker_id": "worker-bat-always-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
     },
     {
       "id": "step-5",
       "action": "POST",
+      "intent": "nack",
       "path": "/ojs/v1/workers/nack",
-      "headers": { "Content-Type": "application/openjobspec+json" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
       "body": {
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-bat-always-2",
@@ -103,16 +179,26 @@
           "message": "Intentional failure to test on_complete fires regardless"
         }
       },
-      "assertions": { "status": 200 }
+      "assertions": {
+        "status": 200
+      }
     },
     {
       "id": "step-6",
       "description": "Verify on_complete callback was enqueued (MUST always fire)",
       "delay_ms": 1000,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-always-complete-cb"], "worker_id": "worker-bat-always-cb-1" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-always-complete-cb"
+        ],
+        "worker_id": "worker-bat-always-cb-1"
+      },
       "assertions": {
         "status": 200,
         "body": {
@@ -126,9 +212,17 @@
       "id": "step-7",
       "description": "Verify on_failure callback was also enqueued (because a job failed)",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-always-failure-cb"], "worker_id": "worker-bat-always-cb-2" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-always-failure-cb"
+        ],
+        "worker_id": "worker-bat-always-cb-2"
+      },
       "assertions": {
         "status": 200,
         "body": {
@@ -141,9 +235,17 @@
       "id": "step-8",
       "description": "Verify on_success callback was NOT enqueued (because a job failed)",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["batch-always-success-cb"], "worker_id": "worker-bat-always-cb-3" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "batch-always-success-cb"
+        ],
+        "worker_id": "worker-bat-always-cb-3"
+      },
       "assertions": {
         "status": 200,
         "body": {

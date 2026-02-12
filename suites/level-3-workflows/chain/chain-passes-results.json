@@ -5,12 +5,18 @@
   "name": "chain-passes-results",
   "description": "In a chain workflow, the result from step 0 MUST be available to step 1 via parent_results. When step 0 completes with a result payload, step 1 MUST receive that payload, enabling data passing between sequential steps.",
   "spec_ref": "ojs-workflows#section-4",
-  "tags": ["level-3", "chain", "data-passing", "parent-results"],
+  "tags": [
+    "level-3",
+    "chain",
+    "data-passing",
+    "parent-results"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Create a chain with 2 steps where step 0 produces data for step 1",
       "action": "POST",
+      "intent": "create-workflow",
       "path": "/ojs/v1/workflows",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -21,13 +27,25 @@
         "steps": [
           {
             "type": "chain.test.producer",
-            "args": [{"action": "generate_report_id"}],
-            "options": { "queue": "chain-result-test" }
+            "args": [
+              {
+                "action": "generate_report_id"
+              }
+            ],
+            "options": {
+              "queue": "chain-result-test"
+            }
           },
           {
             "type": "chain.test.consumer",
-            "args": [{"action": "use_report_id"}],
-            "options": { "queue": "chain-result-test" }
+            "args": [
+              {
+                "action": "use_report_id"
+              }
+            ],
+            "options": {
+              "queue": "chain-result-test"
+            }
           }
         ]
       },
@@ -44,12 +62,15 @@
       "id": "step-2",
       "description": "Fetch and process step 0, completing with a result payload",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["chain-result-test"],
+        "queues": [
+          "chain-result-test"
+        ],
         "worker_id": "worker-chain-result-1"
       },
       "assertions": {
@@ -64,6 +85,7 @@
       "id": "step-3",
       "description": "Ack step 0 with a result containing a report_id",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -88,12 +110,15 @@
       "description": "Fetch step 1 - should include parent_results from step 0",
       "delay_ms": 500,
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["chain-result-test"],
+        "queues": [
+          "chain-result-test"
+        ],
         "worker_id": "worker-chain-result-1"
       },
       "assertions": {
@@ -110,6 +135,7 @@
       "id": "step-5",
       "description": "Complete step 1",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -117,7 +143,9 @@
       "body": {
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-chain-result-1",
-        "result": {"status": "report_processed"}
+        "result": {
+          "status": "report_processed"
+        }
       },
       "assertions": {
         "status": 200,
@@ -131,6 +159,7 @@
       "description": "Verify entire workflow completed",
       "delay_ms": 500,
       "action": "GET",
+      "intent": "get-workflow",
       "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

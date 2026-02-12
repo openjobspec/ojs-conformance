@@ -5,12 +5,18 @@
   "name": "group-parallel-execution",
   "description": "A group workflow with 3 jobs MUST enqueue all of them immediately for parallel execution. All 3 jobs MUST be fetchable without waiting for any to complete first, confirming parallel dispatch behavior.",
   "spec_ref": "ojs-workflows#section-5",
-  "tags": ["level-3", "group", "parallel", "enqueue"],
+  "tags": [
+    "level-3",
+    "group",
+    "parallel",
+    "enqueue"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Create a group workflow with 3 parallel jobs",
       "action": "POST",
+      "intent": "create-workflow",
       "path": "/ojs/v1/workflows",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -21,18 +27,39 @@
         "jobs": [
           {
             "type": "group.test.task_alpha",
-            "args": [{"task": "alpha", "parallel": true}],
-            "options": { "queue": "group-parallel-test" }
+            "args": [
+              {
+                "task": "alpha",
+                "parallel": true
+              }
+            ],
+            "options": {
+              "queue": "group-parallel-test"
+            }
           },
           {
             "type": "group.test.task_beta",
-            "args": [{"task": "beta", "parallel": true}],
-            "options": { "queue": "group-parallel-test" }
+            "args": [
+              {
+                "task": "beta",
+                "parallel": true
+              }
+            ],
+            "options": {
+              "queue": "group-parallel-test"
+            }
           },
           {
             "type": "group.test.task_gamma",
-            "args": [{"task": "gamma", "parallel": true}],
-            "options": { "queue": "group-parallel-test" }
+            "args": [
+              {
+                "task": "gamma",
+                "parallel": true
+              }
+            ],
+            "options": {
+              "queue": "group-parallel-test"
+            }
           }
         ]
       },
@@ -51,12 +78,15 @@
       "id": "step-2",
       "description": "Fetch first job from the group",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["group-parallel-test"],
+        "queues": [
+          "group-parallel-test"
+        ],
         "worker_id": "worker-group-1"
       },
       "assertions": {
@@ -70,12 +100,15 @@
       "id": "step-3",
       "description": "Fetch second job from the group - should be immediately available",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["group-parallel-test"],
+        "queues": [
+          "group-parallel-test"
+        ],
         "worker_id": "worker-group-2"
       },
       "assertions": {
@@ -89,12 +122,15 @@
       "id": "step-4",
       "description": "Fetch third job from the group - should also be immediately available",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["group-parallel-test"],
+        "queues": [
+          "group-parallel-test"
+        ],
         "worker_id": "worker-group-3"
       },
       "assertions": {
