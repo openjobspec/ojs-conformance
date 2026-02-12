@@ -1,0 +1,41 @@
+{
+  "test_id": "L0-ENV-001",
+  "level": 0,
+  "category": "envelope",
+  "name": "valid-minimal-job",
+  "description": "Enqueue a job with only the two required request fields (type, args). Verify the server auto-generates a UUIDv7 id, sets state to 'available', defaults queue to 'default', and populates specversion.",
+  "spec_ref": "ojs-core#section-5.1",
+  "tags": ["level-0", "envelope", "required-fields", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"]
+      },
+      "assertions": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/openjobspec+json",
+          "OJS-Version": "1.0.0-rc.1"
+        },
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.type": "email.send",
+          "$.job.state": "available",
+          "$.job.queue": "default",
+          "$.job.args[0]": "user@example.com",
+          "$.job.args[1]": "welcome",
+          "$.job.attempt": 0,
+          "$.job.created_at": "string:datetime",
+          "$.job.enqueued_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}

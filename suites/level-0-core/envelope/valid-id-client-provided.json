@@ -1,0 +1,36 @@
+{
+  "test_id": "L0-ENV-010",
+  "level": 0,
+  "category": "envelope",
+  "name": "valid-id-client-provided",
+  "description": "Enqueue a job with a client-provided valid UUIDv7 id. The server MUST accept and preserve the client-provided id in the response rather than generating a new one.",
+  "spec_ref": "ojs-core#section-5.1",
+  "tags": ["level-0", "envelope", "id-generation", "uuidv7", "client-id", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "id": "019461a8-1a2b-7c3d-8e4f-5a6b7c8d9e0f"
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "019461a8-1a2b-7c3d-8e4f-5a6b7c8d9e0f",
+          "$.job.type": "email.send",
+          "$.job.state": "available",
+          "$.job.queue": "default",
+          "$.job.attempt": 0,
+          "$.job.created_at": "string:datetime",
+          "$.job.enqueued_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}

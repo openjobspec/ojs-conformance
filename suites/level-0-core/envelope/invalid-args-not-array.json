@@ -1,0 +1,107 @@
+{
+  "test_id": "L0-ENV-007",
+  "level": 0,
+  "category": "envelope",
+  "name": "invalid-args-not-array",
+  "description": "Enqueue jobs where 'args' is not a JSON array (object, string, number, boolean, null). The server MUST reject each request with 400 or 422 because args MUST be a JSON array.",
+  "spec_ref": "ojs-core#section-5.1, L0-ENV-005",
+  "tags": ["level-0", "envelope", "validation", "negative-test", "args-format"],
+  "steps": [
+    {
+      "id": "step-1-object",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": {"email": "user@example.com", "template": "welcome"}
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty",
+          "$.error.retryable": false
+        }
+      }
+    },
+    {
+      "id": "step-2-string",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": "user@example.com"
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-3-number",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": 42
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-4-boolean",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": true
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-5-null",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": null
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    }
+  ]
+}

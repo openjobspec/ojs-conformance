@@ -1,0 +1,50 @@
+{
+  "test_id": "L0-ENV-015",
+  "level": 0,
+  "category": "envelope",
+  "name": "valid-meta-well-known-keys",
+  "description": "Enqueue a job with meta containing all well-known keys (trace_id, user_id, tenant_id, correlation_id, tags). The server MUST preserve all meta key-value pairs without modification through the job lifecycle.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-0", "envelope", "meta", "well-known-keys", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "notification.send",
+        "args": ["usr_55555", "Your order has shipped"],
+        "meta": {
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7",
+          "user_id": "usr_55555",
+          "tenant_id": "tenant_globex",
+          "correlation_id": "corr_order_ship_98765",
+          "locale": "en-US",
+          "tags": ["shipping", "notification", "high-priority"]
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.type": "notification.send",
+          "$.job.state": "available",
+          "$.job.meta.trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "$.job.meta.span_id": "00f067aa0ba902b7",
+          "$.job.meta.user_id": "usr_55555",
+          "$.job.meta.tenant_id": "tenant_globex",
+          "$.job.meta.correlation_id": "corr_order_ship_98765",
+          "$.job.meta.locale": "en-US",
+          "$.job.meta.tags": "array:nonempty",
+          "$.job.meta.tags[0]": "shipping",
+          "$.job.meta.tags[1]": "notification",
+          "$.job.meta.tags[2]": "high-priority"
+        }
+      }
+    }
+  ]
+}

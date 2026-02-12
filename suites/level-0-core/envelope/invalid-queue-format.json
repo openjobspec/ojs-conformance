@@ -1,0 +1,100 @@
+{
+  "test_id": "L0-ENV-006",
+  "level": 0,
+  "category": "envelope",
+  "name": "invalid-queue-format",
+  "description": "Enqueue jobs with invalid queue name formats (uppercase letters, special characters, leading hyphen). The server MUST reject each request with 400 or 422. The queue field must match the pattern ^[a-z0-9][a-z0-9\\-\\.]*$.",
+  "spec_ref": "ojs-core#section-5.1, L0-ENV-004",
+  "tags": ["level-0", "envelope", "validation", "negative-test", "queue-format"],
+  "steps": [
+    {
+      "id": "step-1-uppercase",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "queue": "Default"
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty",
+          "$.error.retryable": false
+        }
+      }
+    },
+    {
+      "id": "step-2-special-chars",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "queue": "my_queue!"
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-3-leading-hyphen",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "queue": "-invalid"
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-4-spaces",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "queue": "my queue"
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    }
+  ]
+}

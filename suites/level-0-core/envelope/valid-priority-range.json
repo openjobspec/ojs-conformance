@@ -1,0 +1,123 @@
+{
+  "test_id": "L0-ENV-016",
+  "level": 0,
+  "category": "envelope",
+  "name": "valid-priority-range",
+  "description": "Enqueue a job with priority set to 0 (NORMAL, the default). Verify the server accepts the priority value and preserves it in the response. Implementations MUST support at least the range -100 to 100.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-0", "envelope", "priority", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1-normal-priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "priority": 0
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.type": "email.send",
+          "$.job.state": "available",
+          "$.job.priority": 0
+        }
+      }
+    },
+    {
+      "id": "step-2-high-priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["admin@example.com", "security_alert"],
+        "options": {
+          "priority": 10
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.priority": 10
+        }
+      }
+    },
+    {
+      "id": "step-3-low-priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "report.generate",
+        "args": ["weekly_digest"],
+        "options": {
+          "priority": -10
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.priority": -10
+        }
+      }
+    },
+    {
+      "id": "step-4-max-priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "alert.critical",
+        "args": ["system_down"],
+        "options": {
+          "priority": 100
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.priority": 100
+        }
+      }
+    },
+    {
+      "id": "step-5-min-priority",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "cleanup.old_data",
+        "args": ["logs", 90],
+        "options": {
+          "priority": -100
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.priority": -100
+        }
+      }
+    }
+  ]
+}

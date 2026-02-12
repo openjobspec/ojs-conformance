@@ -1,0 +1,30 @@
+{
+  "test_id": "L0-ENV-004",
+  "level": 0,
+  "category": "envelope",
+  "name": "invalid-missing-args",
+  "description": "Enqueue a job without the required 'args' field. The server MUST reject the request with 400 or 422 and return a structured error.",
+  "spec_ref": "ojs-core#section-5.1, L0-ENV-001",
+  "tags": ["level-0", "envelope", "validation", "negative-test", "required-fields"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send"
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty",
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}

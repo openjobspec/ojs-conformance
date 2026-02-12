@@ -1,0 +1,38 @@
+{
+  "test_id": "L0-ENV-019",
+  "level": 0,
+  "category": "envelope",
+  "name": "valid-system-managed-fields",
+  "description": "Enqueue a job and verify that all system-managed fields are set by the server: state MUST be 'available' (for an immediate job), attempt MUST be 0, created_at MUST be a valid datetime, and enqueued_at MUST be a valid datetime. Clients MUST NOT set these directly; the implementation MUST set them.",
+  "spec_ref": "ojs-core#section-5.3",
+  "tags": ["level-0", "envelope", "system-managed", "state", "attempt", "timestamps", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.type": "email.send",
+          "$.job.state": "available",
+          "$.job.attempt": 0,
+          "$.job.created_at": "string:datetime",
+          "$.job.enqueued_at": "string:datetime",
+          "$.job.started_at": "absent",
+          "$.job.completed_at": "absent",
+          "$.job.error": "absent",
+          "$.job.result": "absent"
+        }
+      }
+    }
+  ]
+}

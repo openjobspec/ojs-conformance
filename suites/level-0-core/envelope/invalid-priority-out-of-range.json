@@ -1,0 +1,77 @@
+{
+  "test_id": "L0-ENV-017",
+  "level": 0,
+  "category": "envelope",
+  "name": "invalid-priority-out-of-range",
+  "description": "Enqueue jobs with priority values outside the required range of -100 to 100. The server MUST reject these requests with 400 or 422. Implementations MUST support at least the range -100 to 100.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-0", "envelope", "validation", "negative-test", "priority"],
+  "steps": [
+    {
+      "id": "step-1-too-high",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "priority": 101
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-2-too-low",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "priority": -101
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    },
+    {
+      "id": "step-3-extreme-high",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "options": {
+          "priority": 999999
+        }
+      },
+      "assertions": {
+        "status": "number:range(400,422)",
+        "body": {
+          "$.error.code": "string:nonempty",
+          "$.error.message": "string:nonempty"
+        }
+      }
+    }
+  ]
+}

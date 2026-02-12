@@ -1,0 +1,37 @@
+{
+  "test_id": "L0-ENV-018",
+  "level": 0,
+  "category": "envelope",
+  "name": "valid-timeout-value",
+  "description": "Enqueue a job with a custom timeout value (60000ms = 60 seconds). Verify the server accepts and preserves the timeout setting in the response.",
+  "spec_ref": "ojs-core#section-5.2",
+  "tags": ["level-0", "envelope", "timeout", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "report.generate",
+        "args": [42, "quarterly"],
+        "options": {
+          "timeout_ms": 60000
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.type": "report.generate",
+          "$.job.state": "available",
+          "$.job.args[0]": 42,
+          "$.job.args[1]": "quarterly",
+          "$.job.created_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}
