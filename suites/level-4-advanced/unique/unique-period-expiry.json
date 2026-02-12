@@ -5,23 +5,38 @@
   "name": "unique-period-expiry",
   "description": "A job enqueued with a unique period of PT2S MUST allow a duplicate to be enqueued after the period expires. After waiting 3 seconds past the unique period, the same job MUST be accepted again with a 201 response.",
   "spec_ref": "ojs-unique-jobs#section-7",
-  "tags": ["level-4", "unique", "period", "expiry", "timing"],
+  "tags": [
+    "level-4",
+    "unique",
+    "period",
+    "expiry",
+    "timing"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Enqueue job with unique period of 2 seconds",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.period_expiry",
-        "args": [{"action": "sync_data", "batch": "B-001"}],
+        "args": [
+          {
+            "action": "sync_data",
+            "batch": "B-001"
+          }
+        ],
         "options": {
           "queue": "unique-period-test",
           "unique": {
-            "keys": ["type", "args"],
+            "keys": [
+              "type",
+              "args"
+            ],
             "on_conflict": "reject",
             "period": "PT2S"
           }
@@ -39,17 +54,26 @@
       "id": "step-2",
       "description": "Immediately try to enqueue duplicate - should be rejected",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.period_expiry",
-        "args": [{"action": "sync_data", "batch": "B-001"}],
+        "args": [
+          {
+            "action": "sync_data",
+            "batch": "B-001"
+          }
+        ],
         "options": {
           "queue": "unique-period-test",
           "unique": {
-            "keys": ["type", "args"],
+            "keys": [
+              "type",
+              "args"
+            ],
             "on_conflict": "reject",
             "period": "PT2S"
           }
@@ -58,7 +82,7 @@
       "assertions": {
         "status": 409,
         "body": {
-          "$.error": "string:non_empty"
+          "$.error.message": "string:non_empty"
         }
       }
     },
@@ -67,17 +91,26 @@
       "description": "Wait 3 seconds for the unique period to expire, then enqueue again - should succeed",
       "delay_ms": 3000,
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.period_expiry",
-        "args": [{"action": "sync_data", "batch": "B-001"}],
+        "args": [
+          {
+            "action": "sync_data",
+            "batch": "B-001"
+          }
+        ],
         "options": {
           "queue": "unique-period-test",
           "unique": {
-            "keys": ["type", "args"],
+            "keys": [
+              "type",
+              "args"
+            ],
             "on_conflict": "reject",
             "period": "PT2S"
           }

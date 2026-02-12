@@ -5,25 +5,43 @@
   "name": "unique-replace-duplicate",
   "description": "A job enqueued with on_conflict='replace' MUST cancel the existing job and enqueue the new one when a duplicate is submitted. The original job MUST be cancelled and a new job with a new ID MUST be created.",
   "spec_ref": "ojs-unique-jobs#section-5",
-  "tags": ["level-4", "unique", "replace", "conflict"],
+  "tags": [
+    "level-4",
+    "unique",
+    "replace",
+    "conflict"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Enqueue first job with unique constraint (on_conflict=replace)",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.replace_duplicate",
-        "args": [{"action": "generate_report", "version": 1}],
+        "args": [
+          {
+            "action": "generate_report",
+            "version": 1
+          }
+        ],
         "options": {
           "queue": "unique-replace-test",
           "unique": {
-            "keys": ["type"],
+            "keys": [
+              "type"
+            ],
             "on_conflict": "replace",
-            "states": ["available", "active", "retryable", "scheduled"]
+            "states": [
+              "available",
+              "active",
+              "retryable",
+              "scheduled"
+            ]
           }
         }
       },
@@ -39,19 +57,32 @@
       "id": "step-2",
       "description": "Enqueue duplicate with replace policy - should succeed and replace the original",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.replace_duplicate",
-        "args": [{"action": "generate_report", "version": 2}],
+        "args": [
+          {
+            "action": "generate_report",
+            "version": 2
+          }
+        ],
         "options": {
           "queue": "unique-replace-test",
           "unique": {
-            "keys": ["type"],
+            "keys": [
+              "type"
+            ],
             "on_conflict": "replace",
-            "states": ["available", "active", "retryable", "scheduled"]
+            "states": [
+              "available",
+              "active",
+              "retryable",
+              "scheduled"
+            ]
           }
         }
       },
@@ -68,6 +99,7 @@
       "id": "step-3",
       "description": "Verify the original job was cancelled",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"
@@ -84,6 +116,7 @@
       "id": "step-4",
       "description": "Verify the new replacement job is available",
       "action": "GET",
+      "intent": "get-job",
       "path": "/ojs/v1/jobs/{{steps.step-2.response.body.job.id}}",
       "headers": {
         "Accept": "application/openjobspec+json"

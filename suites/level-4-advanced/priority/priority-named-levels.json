@@ -5,19 +5,29 @@
   "name": "priority-named-levels",
   "description": "The server MUST support named priority levels that map to numeric values: HIGH=10, NORMAL=0, LOW=-10. Jobs enqueued with named priority levels MUST be fetched in the same order as their numeric equivalents (HIGH first, then NORMAL, then LOW).",
   "spec_ref": "ojs-core#section-5.2",
-  "tags": ["level-4", "priority", "named-levels", "ordering"],
+  "tags": [
+    "level-4",
+    "priority",
+    "named-levels",
+    "ordering"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Enqueue job with LOW named priority",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "priority.test.named_low",
-        "args": [{"level": "LOW"}],
+        "args": [
+          {
+            "level": "LOW"
+          }
+        ],
         "options": {
           "queue": "priority-named-test",
           "priority": -10
@@ -35,13 +45,18 @@
       "id": "step-2",
       "description": "Enqueue job with HIGH named priority",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "priority.test.named_high",
-        "args": [{"level": "HIGH"}],
+        "args": [
+          {
+            "level": "HIGH"
+          }
+        ],
         "options": {
           "queue": "priority-named-test",
           "priority": 10
@@ -59,13 +74,18 @@
       "id": "step-3",
       "description": "Enqueue job with NORMAL named priority",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "priority.test.named_normal",
-        "args": [{"level": "NORMAL"}],
+        "args": [
+          {
+            "level": "NORMAL"
+          }
+        ],
         "options": {
           "queue": "priority-named-test",
           "priority": 0
@@ -83,12 +103,15 @@
       "id": "step-4",
       "description": "First FETCH should return HIGH priority job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["priority-named-test"],
+        "queues": [
+          "priority-named-test"
+        ],
         "worker_id": "worker-named-pri-1"
       },
       "assertions": {
@@ -104,12 +127,15 @@
       "id": "step-5",
       "description": "Second FETCH should return NORMAL priority job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["priority-named-test"],
+        "queues": [
+          "priority-named-test"
+        ],
         "worker_id": "worker-named-pri-2"
       },
       "assertions": {
@@ -125,12 +151,15 @@
       "id": "step-6",
       "description": "Third FETCH should return LOW priority job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["priority-named-test"],
+        "queues": [
+          "priority-named-test"
+        ],
         "worker_id": "worker-named-pri-3"
       },
       "assertions": {

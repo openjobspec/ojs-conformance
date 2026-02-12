@@ -5,25 +5,41 @@
   "name": "unique-state-filtering",
   "description": "Unique constraints with states=['available'] MUST only consider jobs in the 'available' state as duplicates. After completing a job (moving it to 'completed'), enqueuing the same job again MUST succeed because 'completed' is not in the uniqueness states filter.",
   "spec_ref": "ojs-unique-jobs#section-6",
-  "tags": ["level-4", "unique", "states", "filtering"],
+  "tags": [
+    "level-4",
+    "unique",
+    "states",
+    "filtering"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Enqueue job with unique states=['available']",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.state_filter",
-        "args": [{"action": "process_payment", "payment_id": "PAY-001"}],
+        "args": [
+          {
+            "action": "process_payment",
+            "payment_id": "PAY-001"
+          }
+        ],
         "options": {
           "queue": "unique-state-test",
           "unique": {
-            "keys": ["type", "args"],
+            "keys": [
+              "type",
+              "args"
+            ],
             "on_conflict": "reject",
-            "states": ["available"]
+            "states": [
+              "available"
+            ]
           }
         }
       },
@@ -39,12 +55,15 @@
       "id": "step-2",
       "description": "Fetch the job to move it to active state",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["unique-state-test"],
+        "queues": [
+          "unique-state-test"
+        ],
         "worker_id": "worker-unique-state-1"
       },
       "assertions": {
@@ -59,6 +78,7 @@
       "id": "step-3",
       "description": "Complete the job to move it to completed state",
       "action": "POST",
+      "intent": "ack",
       "path": "/ojs/v1/workers/ack",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -66,7 +86,9 @@
       "body": {
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-unique-state-1",
-        "result": {"status": "payment_processed"}
+        "result": {
+          "status": "payment_processed"
+        }
       },
       "assertions": {
         "status": 200,
@@ -79,19 +101,30 @@
       "id": "step-4",
       "description": "Enqueue the same job again - should succeed since 'completed' is not in the states filter",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "unique.test.state_filter",
-        "args": [{"action": "process_payment", "payment_id": "PAY-001"}],
+        "args": [
+          {
+            "action": "process_payment",
+            "payment_id": "PAY-001"
+          }
+        ],
         "options": {
           "queue": "unique-state-test",
           "unique": {
-            "keys": ["type", "args"],
+            "keys": [
+              "type",
+              "args"
+            ],
             "on_conflict": "reject",
-            "states": ["available"]
+            "states": [
+              "available"
+            ]
           }
         }
       },

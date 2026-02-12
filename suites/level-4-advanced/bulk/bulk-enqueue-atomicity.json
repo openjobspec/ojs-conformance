@@ -5,27 +5,63 @@
   "name": "bulk-enqueue-atomicity",
   "description": "Batch enqueue MUST be atomic (all-or-nothing). If one job in the batch is invalid, the entire batch MUST be rejected and no jobs MUST be created. The response MUST indicate the validation error.",
   "spec_ref": "ojs-json-format#section-10",
-  "tags": ["level-4", "bulk", "atomicity", "all-or-nothing", "validation"],
+  "tags": [
+    "level-4",
+    "bulk",
+    "atomicity",
+    "all-or-nothing",
+    "validation"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Batch enqueue with one invalid job (missing required 'type' field)",
       "action": "POST",
+      "intent": "bulk-enqueue",
       "path": "/ojs/v1/jobs/batch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "jobs": [
-          { "type": "bulk.test.valid_job_1", "args": [{"index": 0}], "options": {"queue": "bulk-atomic-test"} },
-          { "type": "bulk.test.valid_job_2", "args": [{"index": 1}], "options": {"queue": "bulk-atomic-test"} },
-          { "args": [{"index": 2}], "options": {"queue": "bulk-atomic-test"} }
+          {
+            "type": "bulk.test.valid_job_1",
+            "args": [
+              {
+                "index": 0
+              }
+            ],
+            "options": {
+              "queue": "bulk-atomic-test"
+            }
+          },
+          {
+            "type": "bulk.test.valid_job_2",
+            "args": [
+              {
+                "index": 1
+              }
+            ],
+            "options": {
+              "queue": "bulk-atomic-test"
+            }
+          },
+          {
+            "args": [
+              {
+                "index": 2
+              }
+            ],
+            "options": {
+              "queue": "bulk-atomic-test"
+            }
+          }
         ]
       },
       "assertions": {
         "status": "one_of:400,422",
         "body": {
-          "$.error": "string:non_empty"
+          "$.error.message": "string:non_empty"
         }
       }
     },
@@ -33,12 +69,15 @@
       "id": "step-2",
       "description": "Verify no jobs were created on the queue (atomicity check)",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["bulk-atomic-test"],
+        "queues": [
+          "bulk-atomic-test"
+        ],
         "worker_id": "worker-bulk-atomic-1"
       },
       "assertions": {

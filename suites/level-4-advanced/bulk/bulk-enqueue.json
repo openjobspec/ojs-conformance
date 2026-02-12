@@ -5,28 +5,134 @@
   "name": "bulk-enqueue",
   "description": "Batch enqueuing 10 jobs in a single request MUST create all 10 jobs successfully. The response MUST return 201 with all job IDs and each job MUST be in the 'available' state.",
   "spec_ref": "ojs-json-format#section-10",
-  "tags": ["level-4", "bulk", "batch-enqueue", "happy-path"],
+  "tags": [
+    "level-4",
+    "bulk",
+    "batch-enqueue",
+    "happy-path"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Batch enqueue 10 jobs in a single request",
       "action": "POST",
+      "intent": "bulk-enqueue",
       "path": "/ojs/v1/jobs/batch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "jobs": [
-          { "type": "bulk.test.job", "args": [{"index": 0}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 1}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 2}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 3}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 4}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 5}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 6}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 7}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 8}], "options": {"queue": "bulk-test"} },
-          { "type": "bulk.test.job", "args": [{"index": 9}], "options": {"queue": "bulk-test"} }
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 0
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 1
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 2
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 3
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 4
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 5
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 6
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 7
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 8
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          },
+          {
+            "type": "bulk.test.job",
+            "args": [
+              {
+                "index": 9
+              }
+            ],
+            "options": {
+              "queue": "bulk-test"
+            }
+          }
         ]
       },
       "assertions": {
@@ -44,6 +150,7 @@
       "id": "step-2",
       "description": "Verify queue stats show 10 available jobs",
       "action": "GET",
+      "intent": "queue-stats",
       "path": "/ojs/v1/queues/bulk-test/stats",
       "headers": {
         "Accept": "application/openjobspec+json"

@@ -5,12 +5,19 @@
   "name": "pause-queue",
   "description": "Pausing a queue MUST prevent workers from fetching jobs from it. After pausing the queue, enqueuing a job, and attempting to FETCH, the result MUST be empty. After resuming the queue, the job MUST become fetchable again.",
   "spec_ref": "ojs-http-binding#section-7",
-  "tags": ["level-4", "queue-ops", "pause", "resume", "delivery"],
+  "tags": [
+    "level-4",
+    "queue-ops",
+    "pause",
+    "resume",
+    "delivery"
+  ],
   "steps": [
     {
       "id": "step-1",
       "description": "Pause the queue",
       "action": "POST",
+      "intent": "pause-queue",
       "path": "/ojs/v1/queues/pause-test/pause",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -28,13 +35,18 @@
       "id": "step-2",
       "description": "Enqueue a job on the paused queue",
       "action": "POST",
+      "intent": "enqueue",
       "path": "/ojs/v1/jobs",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
         "type": "queueops.test.pause_job",
-        "args": [{"action": "test_pause_behavior"}],
+        "args": [
+          {
+            "action": "test_pause_behavior"
+          }
+        ],
         "options": {
           "queue": "pause-test"
         }
@@ -52,12 +64,15 @@
       "id": "step-3",
       "description": "Attempt to fetch from the paused queue - should return nothing",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["pause-test"],
+        "queues": [
+          "pause-test"
+        ],
         "worker_id": "worker-pause-1"
       },
       "assertions": {
@@ -71,6 +86,7 @@
       "id": "step-4",
       "description": "Resume the queue",
       "action": "POST",
+      "intent": "resume-queue",
       "path": "/ojs/v1/queues/pause-test/resume",
       "headers": {
         "Content-Type": "application/openjobspec+json"
@@ -88,12 +104,15 @@
       "id": "step-5",
       "description": "Fetch from the resumed queue - should now return the job",
       "action": "POST",
+      "intent": "fetch",
       "path": "/ojs/v1/workers/fetch",
       "headers": {
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "queues": ["pause-test"],
+        "queues": [
+          "pause-test"
+        ],
         "worker_id": "worker-pause-1"
       },
       "assertions": {
