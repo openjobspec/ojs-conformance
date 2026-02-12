@@ -1,0 +1,137 @@
+{
+  "test_id": "L3-BAT-001",
+  "level": 3,
+  "category": "batch",
+  "name": "batch-success-callback",
+  "description": "A batch workflow with 3 jobs and an on_success callback MUST fire the on_success callback when all jobs complete successfully. After all 3 jobs are acked, the on_success callback job MUST be enqueued and fetchable.",
+  "spec_ref": "ojs-workflows#section-6",
+  "tags": ["level-3", "batch", "callback", "on-success"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a batch workflow with on_success callback",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "batch",
+        "name": "batch-success-callback-test",
+        "jobs": [
+          {
+            "type": "batch.test.job_a",
+            "args": [{"task": "a"}],
+            "options": { "queue": "batch-success-test" }
+          },
+          {
+            "type": "batch.test.job_b",
+            "args": [{"task": "b"}],
+            "options": { "queue": "batch-success-test" }
+          },
+          {
+            "type": "batch.test.job_c",
+            "args": [{"task": "c"}],
+            "options": { "queue": "batch-success-test" }
+          }
+        ],
+        "callbacks": {
+          "on_success": {
+            "type": "batch.test.success_callback",
+            "args": [{"action": "notify_all_succeeded"}],
+            "options": { "queue": "batch-callback-test" }
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "batch",
+          "$.workflow.state": "running",
+          "$.workflow.jobs_total": 3
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch and complete job 1",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-success-test"], "worker_id": "worker-bat-1" },
+      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-bat-1",
+        "result": {"status": "done"}
+      },
+      "assertions": { "status": 200, "body": { "$.job.state": "completed" } }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch and complete job 2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-success-test"], "worker_id": "worker-bat-2" },
+      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+    },
+    {
+      "id": "step-5",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-bat-2",
+        "result": {"status": "done"}
+      },
+      "assertions": { "status": 200, "body": { "$.job.state": "completed" } }
+    },
+    {
+      "id": "step-6",
+      "description": "Fetch and complete job 3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-success-test"], "worker_id": "worker-bat-3" },
+      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+    },
+    {
+      "id": "step-7",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "job_id": "{{steps.step-6.response.body.jobs[0].id}}",
+        "worker_id": "worker-bat-3",
+        "result": {"status": "done"}
+      },
+      "assertions": { "status": 200, "body": { "$.job.state": "completed" } }
+    },
+    {
+      "id": "step-8",
+      "description": "Verify the on_success callback was enqueued",
+      "delay_ms": 1000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-callback-test"], "worker_id": "worker-bat-cb-1" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "batch.test.success_callback",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0].action": "notify_all_succeeded"
+        }
+      }
+    }
+  ]
+}

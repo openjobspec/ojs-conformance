@@ -1,0 +1,119 @@
+{
+  "test_id": "L3-BAT-003",
+  "level": 3,
+  "category": "batch",
+  "name": "batch-failure-callback",
+  "description": "A batch workflow with an on_failure callback MUST fire the callback when at least one job fails. After one job is NACKed with no retries remaining, the on_failure callback MUST be enqueued once all jobs reach a terminal state.",
+  "spec_ref": "ojs-workflows#section-6",
+  "tags": ["level-3", "batch", "callback", "on-failure"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a batch workflow with on_failure callback",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "batch",
+        "name": "batch-failure-callback-test",
+        "jobs": [
+          {
+            "type": "batch.test.fail_job_a",
+            "args": [{"task": "a_will_succeed"}],
+            "options": { "queue": "batch-fail-test" }
+          },
+          {
+            "type": "batch.test.fail_job_b",
+            "args": [{"task": "b_will_fail"}],
+            "options": {
+              "queue": "batch-fail-test",
+              "retry_policy": { "max_attempts": 1 }
+            }
+          }
+        ],
+        "callbacks": {
+          "on_failure": {
+            "type": "batch.test.failure_callback",
+            "args": [{"action": "notify_failure_occurred"}],
+            "options": { "queue": "batch-fail-cb-test" }
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "batch",
+          "$.workflow.state": "running",
+          "$.workflow.jobs_total": 2
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch first job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-fail-test"], "worker_id": "worker-bat-fail-1" },
+      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+    },
+    {
+      "id": "step-3",
+      "description": "Complete first job successfully",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-bat-fail-1",
+        "result": {"status": "done"}
+      },
+      "assertions": { "status": 200, "body": { "$.job.state": "completed" } }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch second job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-fail-test"], "worker_id": "worker-bat-fail-2" },
+      "assertions": { "status": 200, "body": { "$.jobs[0].state": "active" } }
+    },
+    {
+      "id": "step-5",
+      "description": "NACK second job to trigger failure",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-bat-fail-2",
+        "error": {
+          "type": "ProcessingError",
+          "message": "Intentional failure to trigger on_failure callback"
+        }
+      },
+      "assertions": { "status": 200 }
+    },
+    {
+      "id": "step-6",
+      "description": "Verify the on_failure callback was enqueued",
+      "delay_ms": 1000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["batch-fail-cb-test"], "worker_id": "worker-bat-cb-fail-1" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "batch.test.failure_callback",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0].action": "notify_failure_occurred"
+        }
+      }
+    }
+  ]
+}
