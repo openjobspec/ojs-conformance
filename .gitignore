@@ -1,6 +1,6 @@
 # Compiled Go binaries
-http
-runner/http/http
+/http
+/runner/http/http
 *.exe
 *.exe~
 *.dll
