@@ -1,0 +1,195 @@
+{
+  "test_id": "L3-CHN-001",
+  "level": 3,
+  "category": "chain",
+  "name": "chain-sequential-execution",
+  "description": "A chain workflow with 3 steps MUST execute them strictly in order. Step 0 MUST complete before step 1 starts, and step 1 MUST complete before step 2 starts. The workflow state MUST transition to 'completed' only after all steps finish.",
+  "spec_ref": "ojs-workflows#section-4",
+  "tags": ["level-3", "chain", "sequential", "ordering"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a chain workflow with 3 sequential steps",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "chain",
+        "name": "sequential-chain-test",
+        "steps": [
+          {
+            "type": "chain.test.step_zero",
+            "args": [{"order": 0, "action": "first_task"}],
+            "options": { "queue": "chain-test" }
+          },
+          {
+            "type": "chain.test.step_one",
+            "args": [{"order": 1, "action": "second_task"}],
+            "options": { "queue": "chain-test" }
+          },
+          {
+            "type": "chain.test.step_two",
+            "args": [{"order": 2, "action": "third_task"}],
+            "options": { "queue": "chain-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "chain",
+          "$.workflow.state": "running",
+          "$.workflow.steps_total": 3,
+          "$.workflow.steps_completed": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch step 0 - should be the first job available",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-test"],
+        "worker_id": "worker-chain-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.step_zero",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0].order": 0
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Complete step 0",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-1",
+        "result": {"output": "step_zero_done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch step 1 - should now be available after step 0 completed",
+      "delay_ms": 500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-test"],
+        "worker_id": "worker-chain-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.step_one",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0].order": 1
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Complete step 1",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-1",
+        "result": {"output": "step_one_done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Fetch step 2 - should now be available after step 1 completed",
+      "delay_ms": 500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-test"],
+        "worker_id": "worker-chain-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.step_two",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0].order": 2
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "description": "Complete step 2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-6.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-1",
+        "result": {"output": "step_two_done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-8",
+      "description": "Verify the workflow is completed",
+      "delay_ms": 500,
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "completed",
+          "$.workflow.steps_total": 3,
+          "$.workflow.steps_completed": 3
+        }
+      }
+    }
+  ]
+}

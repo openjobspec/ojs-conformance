@@ -1,0 +1,142 @@
+{
+  "test_id": "L3-CHN-005",
+  "level": 3,
+  "category": "chain",
+  "name": "chain-cancel",
+  "description": "Cancelling a chain workflow mid-execution MUST cancel all remaining steps. After step 0 completes and the chain is cancelled, step 1 and step 2 MUST NOT execute, and the workflow state MUST be 'cancelled'.",
+  "spec_ref": "ojs-workflows#section-11",
+  "tags": ["level-3", "chain", "cancel", "mid-execution"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a chain with 3 steps",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "chain",
+        "name": "cancel-chain-test",
+        "steps": [
+          {
+            "type": "chain.test.cancel_step_zero",
+            "args": [{"order": 0}],
+            "options": { "queue": "chain-cancel-test" }
+          },
+          {
+            "type": "chain.test.cancel_step_one",
+            "args": [{"order": 1}],
+            "options": { "queue": "chain-cancel-test" }
+          },
+          {
+            "type": "chain.test.cancel_step_two",
+            "args": [{"order": 2}],
+            "options": { "queue": "chain-cancel-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "chain",
+          "$.workflow.state": "running",
+          "$.workflow.steps_total": 3
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch and complete step 0",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-cancel-test"],
+        "worker_id": "worker-chain-cancel-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.cancel_step_zero",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Complete step 0",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-cancel-1",
+        "result": {"output": "step_zero_done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Cancel the entire workflow before step 1 can be processed",
+      "action": "DELETE",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "cancelled"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Verify no more jobs are fetchable from the chain queue",
+      "delay_ms": 1000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-cancel-test"],
+        "worker_id": "worker-chain-cancel-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": []
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Verify workflow state is cancelled",
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "cancelled"
+        }
+      }
+    }
+  ]
+}

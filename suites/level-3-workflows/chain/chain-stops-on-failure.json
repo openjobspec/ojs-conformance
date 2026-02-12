@@ -1,0 +1,175 @@
+{
+  "test_id": "L3-CHN-003",
+  "level": 3,
+  "category": "chain",
+  "name": "chain-stops-on-failure",
+  "description": "In a chain workflow with 3 steps, if step 1 fails (NACK with no retries remaining), step 2 MUST NOT be enqueued and the chain workflow state MUST transition to 'failed'. Remaining steps MUST be cancelled.",
+  "spec_ref": "ojs-workflows#section-4",
+  "tags": ["level-3", "chain", "failure", "stop-on-error"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a chain with 3 steps",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "chain",
+        "name": "failure-chain-test",
+        "steps": [
+          {
+            "type": "chain.test.step_success",
+            "args": [{"order": 0, "action": "succeed"}],
+            "options": { "queue": "chain-fail-test" }
+          },
+          {
+            "type": "chain.test.step_fail",
+            "args": [{"order": 1, "action": "fail_permanently"}],
+            "options": {
+              "queue": "chain-fail-test",
+              "retry_policy": { "max_attempts": 1 }
+            }
+          },
+          {
+            "type": "chain.test.step_never_reached",
+            "args": [{"order": 2, "action": "should_not_execute"}],
+            "options": { "queue": "chain-fail-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "chain",
+          "$.workflow.state": "running",
+          "$.workflow.steps_total": 3
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch and complete step 0 successfully",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-fail-test"],
+        "worker_id": "worker-chain-fail-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.step_success",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Ack step 0",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-fail-1",
+        "result": {"output": "step_zero_ok"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch step 1",
+      "delay_ms": 500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-fail-test"],
+        "worker_id": "worker-chain-fail-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.step_fail",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "NACK step 1 to trigger failure (max_attempts=1, so no retries)",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-fail-1",
+        "error": {
+          "type": "PermanentError",
+          "message": "Intentional failure to test chain stop behavior"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "discarded"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Try to fetch step 2 - should NOT be available since chain failed at step 1",
+      "delay_ms": 1000,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-fail-test"],
+        "worker_id": "worker-chain-fail-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": []
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "description": "Verify the workflow state is failed",
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "failed",
+          "$.workflow.steps_completed": 1,
+          "$.workflow.steps_total": 3
+        }
+      }
+    }
+  ]
+}

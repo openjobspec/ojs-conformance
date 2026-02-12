@@ -1,0 +1,147 @@
+{
+  "test_id": "L3-CHN-002",
+  "level": 3,
+  "category": "chain",
+  "name": "chain-passes-results",
+  "description": "In a chain workflow, the result from step 0 MUST be available to step 1 via parent_results. When step 0 completes with a result payload, step 1 MUST receive that payload, enabling data passing between sequential steps.",
+  "spec_ref": "ojs-workflows#section-4",
+  "tags": ["level-3", "chain", "data-passing", "parent-results"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a chain with 2 steps where step 0 produces data for step 1",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "chain",
+        "name": "result-passing-chain",
+        "steps": [
+          {
+            "type": "chain.test.producer",
+            "args": [{"action": "generate_report_id"}],
+            "options": { "queue": "chain-result-test" }
+          },
+          {
+            "type": "chain.test.consumer",
+            "args": [{"action": "use_report_id"}],
+            "options": { "queue": "chain-result-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "chain",
+          "$.workflow.state": "running"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch and process step 0, completing with a result payload",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-result-test"],
+        "worker_id": "worker-chain-result-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.producer",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Ack step 0 with a result containing a report_id",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-result-1",
+        "result": {
+          "report_id": "RPT-20260101-001",
+          "row_count": 42
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch step 1 - should include parent_results from step 0",
+      "delay_ms": 500,
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-result-test"],
+        "worker_id": "worker-chain-result-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.consumer",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].parent_results[0].report_id": "RPT-20260101-001",
+          "$.jobs[0].parent_results[0].row_count": 42
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Complete step 1",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-result-1",
+        "result": {"status": "report_processed"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Verify entire workflow completed",
+      "delay_ms": 500,
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.state": "completed",
+          "$.workflow.steps_completed": 2
+        }
+      }
+    }
+  ]
+}

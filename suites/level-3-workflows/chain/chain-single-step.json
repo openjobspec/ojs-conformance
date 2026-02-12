@@ -1,0 +1,100 @@
+{
+  "test_id": "L3-CHN-004",
+  "level": 3,
+  "category": "chain",
+  "name": "chain-single-step",
+  "description": "A chain workflow with only 1 step MUST function correctly. The single step MUST be enqueued, fetchable, and upon completion the workflow MUST transition to 'completed'.",
+  "spec_ref": "ojs-workflows#section-4",
+  "tags": ["level-3", "chain", "single-step", "edge-case"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a chain with a single step",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "chain",
+        "name": "single-step-chain",
+        "steps": [
+          {
+            "type": "chain.test.solo_step",
+            "args": [{"action": "only_task"}],
+            "options": { "queue": "chain-single-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "chain",
+          "$.workflow.state": "running",
+          "$.workflow.steps_total": 1,
+          "$.workflow.steps_completed": 0
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch the single step",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["chain-single-test"],
+        "worker_id": "worker-chain-single-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "chain.test.solo_step",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Complete the single step",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-chain-single-1",
+        "result": {"output": "solo_task_done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Verify workflow is completed",
+      "delay_ms": 500,
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "completed",
+          "$.workflow.steps_total": 1,
+          "$.workflow.steps_completed": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "test_id": "L3-GRP-002",
+  "level": 3,
+  "category": "group",
+  "name": "group-all-complete",
+  "description": "When all jobs in a group workflow complete successfully, the group workflow state MUST transition to 'completed'. After completing all 3 jobs, a GET on the workflow MUST show state='completed' and all jobs marked done.",
+  "spec_ref": "ojs-workflows#section-5",
+  "tags": ["level-3", "group", "completed", "all-success"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a group workflow with 3 jobs",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "group",
+        "name": "group-complete-test",
+        "jobs": [
+          {
+            "type": "group.test.complete_a",
+            "args": [{"task": "a"}],
+            "options": { "queue": "group-complete-test" }
+          },
+          {
+            "type": "group.test.complete_b",
+            "args": [{"task": "b"}],
+            "options": { "queue": "group-complete-test" }
+          },
+          {
+            "type": "group.test.complete_c",
+            "args": [{"task": "c"}],
+            "options": { "queue": "group-complete-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "group",
+          "$.workflow.state": "running",
+          "$.workflow.jobs_total": 3
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch job 1",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["group-complete-test"],
+        "worker_id": "worker-grp-cmp-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Ack job 1",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-grp-cmp-1",
+        "result": {"status": "done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch job 2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["group-complete-test"],
+        "worker_id": "worker-grp-cmp-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "Ack job 2",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-grp-cmp-2",
+        "result": {"status": "done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Fetch job 3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["group-complete-test"],
+        "worker_id": "worker-grp-cmp-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "description": "Ack job 3",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-6.response.body.jobs[0].id}}",
+        "worker_id": "worker-grp-cmp-3",
+        "result": {"status": "done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-8",
+      "description": "Verify the group workflow is completed",
+      "delay_ms": 500,
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "completed",
+          "$.workflow.jobs_total": 3,
+          "$.workflow.jobs_completed": 3
+        }
+      }
+    }
+  ]
+}

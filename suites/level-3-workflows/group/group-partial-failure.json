@@ -1,0 +1,188 @@
+{
+  "test_id": "L3-GRP-003",
+  "level": 3,
+  "category": "group",
+  "name": "group-partial-failure",
+  "description": "In a group workflow with 3 jobs, if 1 job fails while the others succeed, the remaining jobs MUST still be allowed to complete. Once all jobs reach a terminal state, the group workflow MUST transition to 'failed' because at least one job failed.",
+  "spec_ref": "ojs-workflows#section-5",
+  "tags": ["level-3", "group", "partial-failure", "mixed-results"],
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Create a group workflow with 3 jobs",
+      "action": "POST",
+      "path": "/ojs/v1/workflows",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "group",
+        "name": "partial-failure-group",
+        "jobs": [
+          {
+            "type": "group.test.success_job",
+            "args": [{"task": "succeed_1"}],
+            "options": { "queue": "group-partial-test" }
+          },
+          {
+            "type": "group.test.fail_job",
+            "args": [{"task": "fail"}],
+            "options": {
+              "queue": "group-partial-test",
+              "retry_policy": { "max_attempts": 1 }
+            }
+          },
+          {
+            "type": "group.test.success_job_2",
+            "args": [{"task": "succeed_2"}],
+            "options": { "queue": "group-partial-test" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.workflow.id": "string:uuidv7",
+          "$.workflow.type": "group",
+          "$.workflow.state": "running",
+          "$.workflow.jobs_total": 3
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "description": "Fetch first available job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["group-partial-test"],
+        "worker_id": "worker-grp-partial-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Complete the first fetched job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-2.response.body.jobs[0].id}}",
+        "worker_id": "worker-grp-partial-1",
+        "result": {"status": "done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "description": "Fetch second available job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["group-partial-test"],
+        "worker_id": "worker-grp-partial-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-5",
+      "description": "NACK the second job to simulate failure",
+      "action": "POST",
+      "path": "/ojs/v1/workers/nack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
+        "worker_id": "worker-grp-partial-2",
+        "error": {
+          "type": "ProcessingError",
+          "message": "Intentional failure for partial failure test"
+        }
+      },
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-6",
+      "description": "Fetch third available job",
+      "action": "POST",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["group-partial-test"],
+        "worker_id": "worker-grp-partial-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-7",
+      "description": "Complete the third job successfully",
+      "action": "POST",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-6.response.body.jobs[0].id}}",
+        "worker_id": "worker-grp-partial-3",
+        "result": {"status": "done"}
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-8",
+      "description": "Verify the group workflow is in failed state due to one job failure",
+      "delay_ms": 500,
+      "action": "GET",
+      "path": "/ojs/v1/workflows/{{steps.step-1.response.body.workflow.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.workflow.id": "{{steps.step-1.response.body.workflow.id}}",
+          "$.workflow.state": "failed",
+          "$.workflow.jobs_total": 3
+        }
+      }
+    }
+  ]
+}
