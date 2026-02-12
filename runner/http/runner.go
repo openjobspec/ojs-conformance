@@ -11,6 +11,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -20,10 +21,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/openjobspec/ojs-conformance/lib"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -44,6 +47,7 @@ func main() {
 		verbose      bool
 		tolerancePct float64
 		timeoutSec   int
+		redisURL     string
 	)
 
 	flag.StringVar(&baseURL, "url", "http://localhost:8080", "Base URL of the OJS-conformant server")
@@ -55,6 +59,7 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, "Show detailed step results")
 	flag.Float64Var(&tolerancePct, "tolerance", 50, "Timing tolerance percentage")
 	flag.IntVar(&timeoutSec, "timeout", 30, "HTTP request timeout in seconds")
+	flag.StringVar(&redisURL, "redis", "", "Redis URL for FLUSHDB between tests (e.g., redis://localhost:6379)")
 	flag.Parse()
 
 	// Normalize base URL
@@ -85,11 +90,31 @@ func main() {
 		MaxWaitMs:      30000,
 	}
 
+	// Set up optional Redis client for test isolation
+	var redisClient *redis.Client
+	if redisURL != "" {
+		opts, err := redis.ParseURL(redisURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing Redis URL: %v\n", err)
+			os.Exit(2)
+		}
+		redisClient = redis.NewClient(opts)
+		if err := redisClient.Ping(context.Background()).Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error connecting to Redis: %v\n", err)
+			os.Exit(2)
+		}
+		defer redisClient.Close()
+	}
+
 	// Run tests
 	suiteStart := time.Now()
 	var results []lib.TestResult
 
 	for _, tc := range tests {
+		// Flush Redis between tests for isolation
+		if redisClient != nil {
+			redisClient.FlushDB(context.Background())
+		}
 		result := runTest(tc, baseURL, client, timingCfg, verbose)
 		results = append(results, result)
 	}
@@ -236,6 +261,18 @@ func executeStep(step lib.Step, baseURL string, client *http.Client, stepResults
 		time.Sleep(time.Duration(step.DelayMs) * time.Millisecond)
 	}
 
+	// Handle WAIT action (pure delay, no HTTP request)
+	if strings.EqualFold(step.Action, "WAIT") {
+		waitMs := step.DurationMs
+		if waitMs <= 0 {
+			waitMs = step.DelayMs
+		}
+		if waitMs > 0 {
+			time.Sleep(time.Duration(waitMs) * time.Millisecond)
+		}
+		return &lib.StepResult{StepID: step.ID}, nil
+	}
+
 	// Resolve template references in path
 	path := resolveTemplates(step.Path, stepResults)
 
@@ -307,26 +344,26 @@ func executeStep(step lib.Step, baseURL string, client *http.Client, stepResults
 	// Evaluate assertions
 	var failures []lib.Failure
 	if step.Assertions != nil {
-		failures = evaluateAssertions(step, sr, timingCfg)
+		failures = evaluateAssertions(step, sr, stepResults, timingCfg)
 	}
 
 	return sr, failures
 }
 
 // evaluateAssertions checks all assertions for a step result.
-func evaluateAssertions(step lib.Step, sr *lib.StepResult, timingCfg lib.TimingConfig) []lib.Failure {
+func evaluateAssertions(step lib.Step, sr *lib.StepResult, stepResults map[string]*lib.StepResult, timingCfg lib.TimingConfig) []lib.Failure {
 	var failures []lib.Failure
 	a := step.Assertions
 
-	// Status code assertion
-	if a.Status != nil {
-		if sr.StatusCode != *a.Status {
+	// Status code assertion (supports int, string matchers, and object matchers)
+	if len(a.Status) > 0 {
+		if err := evaluateStatusAssertion(a.Status, sr.StatusCode); err != nil {
 			failures = append(failures, lib.Failure{
 				StepID:   step.ID,
 				Field:    "status",
-				Expected: fmt.Sprintf("%d", *a.Status),
+				Expected: string(a.Status),
 				Actual:   fmt.Sprintf("%d", sr.StatusCode),
-				Message:  fmt.Sprintf("Expected status %d, got %d", *a.Status, sr.StatusCode),
+				Message:  err.Error(),
 			})
 		}
 	}
@@ -352,31 +389,80 @@ func evaluateAssertions(step lib.Step, sr *lib.StepResult, timingCfg lib.TimingC
 	}
 
 	// Body assertions using JSON path
-	if a.Body != nil && sr.Parsed != nil {
-		for path, matcher := range a.Body {
-			val, err := lib.ResolveJSONPath(path, sr.Parsed)
-			if err != nil {
-				failures = append(failures, lib.Failure{
-					StepID:  step.ID,
-					Field:   path,
-					Message: fmt.Sprintf("Failed to resolve path %q: %v", path, err),
-				})
-				continue
-			}
-
-			if err := lib.MatchAssertion(matcher, val); err != nil {
-				actualStr := "null"
-				if val != nil {
-					b, _ := json.Marshal(val)
-					actualStr = string(b)
+	if a.Body != nil {
+		// Handle special top-level operators like $or and $empty
+		if orRaw, ok := a.Body["$or"]; ok {
+			var alternatives []json.RawMessage
+			if json.Unmarshal(orRaw, &alternatives) == nil {
+				matched := false
+				for _, alt := range alternatives {
+					var altBody map[string]json.RawMessage
+					if json.Unmarshal(alt, &altBody) == nil {
+						altFailed := false
+						for p, m := range altBody {
+							resolvedMatcher := resolveMatcherTemplates(m, stepResults)
+							val, err := lib.ResolveJSONPath(p, sr.Parsed)
+							if err != nil || lib.MatchAssertion(resolvedMatcher, val) != nil {
+								altFailed = true
+								break
+							}
+						}
+						if !altFailed {
+							matched = true
+							break
+						}
+					}
 				}
-				failures = append(failures, lib.Failure{
-					StepID:   step.ID,
-					Field:    path,
-					Expected: string(matcher),
-					Actual:   actualStr,
-					Message:  fmt.Sprintf("Assertion failed at %q: %v", path, err),
-				})
+				if !matched {
+					failures = append(failures, lib.Failure{
+						StepID:  step.ID,
+						Field:   "$or",
+						Message: "No $or alternative matched",
+					})
+				}
+			}
+		}
+
+		if sr.Parsed != nil {
+			for path, matcher := range a.Body {
+				// Skip special top-level operators (but NOT $.path expressions)
+				if strings.HasPrefix(path, "$") && !strings.HasPrefix(path, "$.") {
+					continue
+				}
+
+				// Resolve template references in assertion paths AND matchers
+				resolvedPath := resolveTemplates(path, stepResults)
+				resolvedMatcher := resolveMatcherTemplates(matcher, stepResults)
+
+				val, err := lib.ResolveJSONPath(resolvedPath, sr.Parsed)
+				if err != nil {
+					// Check if matcher is "absent" - field not found is ok
+					var matcherStr string
+					if json.Unmarshal(resolvedMatcher, &matcherStr) == nil && matcherStr == "absent" {
+						continue
+					}
+					failures = append(failures, lib.Failure{
+						StepID:  step.ID,
+						Field:   path,
+						Message: fmt.Sprintf("Failed to resolve path %q: %v", path, err),
+					})
+					continue
+				}
+
+				if err := lib.MatchAssertion(resolvedMatcher, val); err != nil {
+					actualStr := "null"
+					if val != nil {
+						b, _ := json.Marshal(val)
+						actualStr = string(b)
+					}
+					failures = append(failures, lib.Failure{
+						StepID:   step.ID,
+						Field:    path,
+						Expected: string(resolvedMatcher),
+						Actual:   actualStr,
+						Message:  fmt.Sprintf("Assertion failed at %q: %v", path, err),
+					})
+				}
 			}
 		}
 	}
@@ -492,6 +578,20 @@ func resolveTemplates(input string, stepResults map[string]*lib.StepResult) stri
 			return string(b)
 		}
 	})
+}
+
+// resolveMatcherTemplates resolves {{steps.step-id.response.body.field}} references
+// within a JSON assertion matcher value.
+func resolveMatcherTemplates(matcher json.RawMessage, stepResults map[string]*lib.StepResult) json.RawMessage {
+	s := string(matcher)
+	if !strings.Contains(s, "{{steps.") {
+		return matcher
+	}
+	resolved := resolveTemplates(s, stepResults)
+	if resolved != s {
+		return json.RawMessage(resolved)
+	}
+	return matcher
 }
 
 // buildReport aggregates test results into a conformance report.
@@ -658,6 +758,61 @@ func outputTable(report lib.SuiteReport, results []lib.TestResult, verbose bool)
 		}
 		fmt.Println()
 	}
+}
+
+// evaluateStatusAssertion handles various status assertion formats:
+// - integer: exact match (e.g., 200)
+// - string: matcher like "number:range(400,422)"
+// - object: {"$in": [200, 409]}
+func evaluateStatusAssertion(raw json.RawMessage, actual int) error {
+	// Try as integer
+	var statusInt int
+	if err := json.Unmarshal(raw, &statusInt); err == nil {
+		if actual != statusInt {
+			return fmt.Errorf("Expected status %d, got %d", statusInt, actual)
+		}
+		return nil
+	}
+
+	// Try as string matcher
+	var statusStr string
+	if err := json.Unmarshal(raw, &statusStr); err == nil {
+		// Handle one_of:code1,code2,... matcher
+		if strings.HasPrefix(statusStr, "one_of:") {
+			codesStr := statusStr[len("one_of:"):]
+			codes := strings.Split(codesStr, ",")
+			for _, codeStr := range codes {
+				codeStr = strings.TrimSpace(codeStr)
+				code, err := strconv.Atoi(codeStr)
+				if err != nil {
+					return fmt.Errorf("invalid status code %q in one_of matcher", codeStr)
+				}
+				if actual == code {
+					return nil
+				}
+			}
+			return fmt.Errorf("expected status one of [%s], got %d", codesStr, actual)
+		}
+		return lib.MatchAssertion(raw, float64(actual))
+	}
+
+	// Try as object (e.g., {"$in": [200, 409]})
+	var statusObj map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &statusObj); err == nil {
+		if inRaw, ok := statusObj["$in"]; ok {
+			var inList []int
+			if err := json.Unmarshal(inRaw, &inList); err == nil {
+				for _, s := range inList {
+					if actual == s {
+						return nil
+					}
+				}
+				return fmt.Errorf("Expected status in %v, got %d", inList, actual)
+			}
+		}
+	}
+
+	return fmt.Errorf("Unknown status assertion format: %s", string(raw))
 }
 
 // prettyJSON formats JSON for display.
