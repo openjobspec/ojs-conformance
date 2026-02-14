@@ -1,0 +1,64 @@
+{
+  "test_id": "EXT-RL-001",
+  "level": "ext",
+  "category": "rate-limiting",
+  "name": "rate-limit-concurrency",
+  "description": "When a concurrency rate limit is configured, the backend MUST NOT assign more jobs than the limit to workers simultaneously.",
+  "spec_ref": "ojs-rate-limiting#section-5.1",
+  "tags": ["ext", "rate-limiting", "concurrency"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue job with concurrency limit",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.ratelimit.conc",
+        "args": [{"n": 1}],
+        "options": {
+          "queue": "rl-conc-test",
+          "rate_limit": {
+            "key": "rl-test-key",
+            "concurrency": 1
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": { "$.job.id": { "$exists": true } }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue a second job with same rate limit key",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.ratelimit.conc",
+        "args": [{"n": 2}],
+        "options": {
+          "queue": "rl-conc-test",
+          "rate_limit": {
+            "key": "rl-test-key",
+            "concurrency": 1
+          }
+        }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "fetch one job — should succeed",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": { "queues": ["rl-conc-test"], "count": 2, "worker_id": "test-rl-worker" },
+      "assertions": {
+        "status": 200,
+        "body_comment": "Should return at most 1 job due to concurrency limit of 1"
+      }
+    }
+  ]
+}

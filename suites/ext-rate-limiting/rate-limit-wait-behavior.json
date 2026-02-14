@@ -1,0 +1,51 @@
+{
+  "test_id": "EXT-RL-003",
+  "level": "ext",
+  "category": "rate-limiting",
+  "name": "rate-limit-wait-behavior",
+  "description": "When on_limit is 'wait' (default), rate-limited jobs MUST remain in 'available' state and not be discarded.",
+  "spec_ref": "ojs-rate-limiting#section-6.2",
+  "tags": ["ext", "rate-limiting", "wait"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue a job with rate limit",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.ratelimit.wait",
+        "args": [{"n": 1}],
+        "options": {
+          "queue": "rl-wait-test",
+          "rate_limit": {
+            "key": "wait-test-key",
+            "concurrency": 1,
+            "on_limit": "wait"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.state": "available",
+          "$.job.id": { "$exists": true }
+        }
+      },
+      "capture": { "job_id": "$.job.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "verify job is still available (not discarded)",
+      "path": "/ojs/v1/admin/jobs/{{job_id}}",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": { "$in": ["available", "active"] }
+        }
+      }
+    }
+  ]
+}

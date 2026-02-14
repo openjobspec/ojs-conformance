@@ -1,0 +1,43 @@
+{
+  "test_id": "EXT-RL-002",
+  "level": "ext",
+  "category": "rate-limiting",
+  "name": "rate-limit-inspect",
+  "description": "GET /ojs/v1/rate-limits/{key} MUST return the current state of a rate limit partition.",
+  "spec_ref": "ojs-rate-limiting#section-10.1",
+  "tags": ["ext", "rate-limiting", "inspect"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue a job with rate limit to create a partition",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.ratelimit.inspect",
+        "args": [{"n": 1}],
+        "options": {
+          "queue": "rl-inspect-test",
+          "rate_limit": {
+            "key": "inspect-test-key",
+            "concurrency": 5
+          }
+        }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "inspect the rate limit partition",
+      "path": "/ojs/v1/rate-limits/inspect-test-key",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.key": "inspect-test-key"
+        }
+      }
+    }
+  ]
+}
