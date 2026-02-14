@@ -1,0 +1,59 @@
+{
+  "test_id": "EXT-BP-002",
+  "level": "ext",
+  "category": "backpressure",
+  "name": "backpressure-headers-on-reject",
+  "description": "When backpressure rejects an enqueue, the response MUST include X-OJS-Queue-Depth and X-OJS-Queue-Bound headers.",
+  "spec_ref": "ojs-backpressure#section-7.2",
+  "tags": ["ext", "backpressure", "headers"],
+  "preconditions": "Queue 'bp-headers-test' must have max_depth=1 configured",
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "configure queue with depth bound of 1",
+      "path": "/ojs/v1/admin/queues/bp-headers-test/config",
+      "headers": { "Content-Type": "application/json" },
+      "body": {
+        "backpressure": {
+          "max_depth": 1,
+          "strategy": "reject"
+        }
+      },
+      "assertions": { "status": 200 }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fill the queue",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.bp.headers",
+        "args": [{"n": 1}],
+        "options": { "queue": "bp-headers-test" }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "trigger rejection and check headers",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.bp.headers",
+        "args": [{"n": 2}],
+        "options": { "queue": "bp-headers-test" }
+      },
+      "assertions": {
+        "status": 429,
+        "headers": {
+          "X-OJS-Queue-Depth": { "$exists": true },
+          "X-OJS-Queue-Bound": { "$exists": true },
+          "Retry-After": { "$exists": true }
+        }
+      }
+    }
+  ]
+}

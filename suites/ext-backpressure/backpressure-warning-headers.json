@@ -1,0 +1,57 @@
+{
+  "test_id": "EXT-BP-003",
+  "level": "ext",
+  "category": "backpressure",
+  "name": "backpressure-warning-headers",
+  "description": "When queue depth exceeds the warning threshold but is below the bound, successful enqueue responses SHOULD include X-OJS-Queue-Pressure header.",
+  "spec_ref": "ojs-backpressure#section-7.3",
+  "tags": ["ext", "backpressure", "warning"],
+  "preconditions": "Queue 'bp-warn-test' must have max_depth=10 and warning_threshold=0.5 configured",
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "configure queue with depth bound and warning threshold",
+      "path": "/ojs/v1/admin/queues/bp-warn-test/config",
+      "headers": { "Content-Type": "application/json" },
+      "body": {
+        "backpressure": {
+          "max_depth": 10,
+          "strategy": "reject",
+          "warning_threshold": 0.5
+        }
+      },
+      "assertions": { "status": 200 }
+    },
+    {
+      "id": "step-2-seed",
+      "action": "POST",
+      "intent": "seed 6 jobs to cross warning threshold",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "repeat": 6,
+      "body": {
+        "type": "test.bp.warn",
+        "args": [{"n": 1}],
+        "options": { "queue": "bp-warn-test" }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "enqueue one more and check for warning header",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.bp.warn",
+        "args": [{"n": 7}],
+        "options": { "queue": "bp-warn-test" }
+      },
+      "assertions": {
+        "status": 201,
+        "headers_comment": "X-OJS-Queue-Pressure header SHOULD be present with value > 0.5"
+      }
+    }
+  ]
+}

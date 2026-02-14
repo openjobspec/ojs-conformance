@@ -1,0 +1,73 @@
+{
+  "test_id": "EXT-BP-001",
+  "level": "ext",
+  "category": "backpressure",
+  "name": "backpressure-reject-when-full",
+  "description": "When a queue's depth bound is reached with strategy 'reject', enqueue MUST return 429 Too Many Requests.",
+  "spec_ref": "ojs-backpressure#section-7.1",
+  "tags": ["ext", "backpressure", "reject"],
+  "preconditions": "Queue 'bp-reject-test' must have max_depth=2 configured via admin API",
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "configure queue with depth bound",
+      "path": "/ojs/v1/admin/queues/bp-reject-test/config",
+      "headers": { "Content-Type": "application/json" },
+      "body": {
+        "backpressure": {
+          "max_depth": 2,
+          "strategy": "reject"
+        }
+      },
+      "assertions": { "status": 200 }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue first job (should succeed)",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.bp.reject",
+        "args": [{"n": 1}],
+        "options": { "queue": "bp-reject-test" }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "enqueue second job (should succeed, at bound)",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.bp.reject",
+        "args": [{"n": 2}],
+        "options": { "queue": "bp-reject-test" }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "intent": "enqueue third job (should be rejected)",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.bp.reject",
+        "args": [{"n": 3}],
+        "options": { "queue": "bp-reject-test" }
+      },
+      "assertions": {
+        "status": 429,
+        "headers": {
+          "Retry-After": { "$exists": true }
+        },
+        "body": {
+          "$.error.code": "QUEUE_FULL"
+        }
+      }
+    }
+  ]
+}
