@@ -1,0 +1,33 @@
+{
+  "test_id": "EXT-ADM-001",
+  "level": "ext",
+  "category": "admin-api",
+  "name": "admin-stats",
+  "description": "GET /ojs/v1/admin/stats MUST return aggregate statistics with job counts, queue count, and worker count.",
+  "spec_ref": "ojs-admin-api#section-10.1",
+  "tags": ["ext", "admin-api", "stats"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "fetch aggregate stats",
+      "path": "/ojs/v1/admin/stats",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queues": { "$type": "number" },
+          "$.workers": { "$type": "number" },
+          "$.jobs.available": { "$type": "number" },
+          "$.jobs.active": { "$type": "number" },
+          "$.jobs.completed": { "$type": "number" },
+          "$.jobs.discarded": { "$type": "number" },
+          "$.throughput.processed_per_minute": { "$type": "number" },
+          "$.throughput.failed_per_minute": { "$type": "number" }
+        }
+      }
+    }
+  ]
+}

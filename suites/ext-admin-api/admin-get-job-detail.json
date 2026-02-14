@@ -1,0 +1,44 @@
+{
+  "test_id": "EXT-ADM-004",
+  "level": "ext",
+  "category": "admin-api",
+  "name": "admin-get-job-detail",
+  "description": "GET /ojs/v1/admin/jobs/{id} MUST return the full job envelope including args, meta, state, and timestamps.",
+  "spec_ref": "ojs-admin-api#section-7.2",
+  "tags": ["ext", "admin-api", "jobs", "detail"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue a job",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.admin.detail",
+        "args": [{"key": "detail-test"}],
+        "options": { "queue": "admin-detail-test" }
+      },
+      "assertions": {
+        "status": 201,
+        "body": { "$.job.id": { "$exists": true } }
+      },
+      "capture": { "job_id": "$.job.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "fetch job detail via admin API",
+      "path": "/ojs/v1/admin/jobs/{{job_id}}",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.id": "{{job_id}}",
+          "$.type": "test.admin.detail",
+          "$.queue": "admin-detail-test",
+          "$.state": { "$type": "string" }
+        }
+      }
+    }
+  ]
+}

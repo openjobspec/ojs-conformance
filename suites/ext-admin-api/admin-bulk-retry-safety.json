@@ -1,0 +1,25 @@
+{
+  "test_id": "EXT-ADM-006",
+  "level": "ext",
+  "category": "admin-api",
+  "name": "admin-bulk-retry-requires-confirm",
+  "description": "POST /ojs/v1/admin/jobs/bulk/retry without confirm:true MUST be rejected with 400.",
+  "spec_ref": "ojs-admin-api#section-8.1",
+  "tags": ["ext", "admin-api", "bulk", "safety"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "attempt bulk retry without confirmation",
+      "path": "/ojs/v1/admin/jobs/bulk/retry",
+      "headers": { "Content-Type": "application/json" },
+      "body": {
+        "filter": { "state": "discarded" },
+        "confirm": false
+      },
+      "assertions": {
+        "status": 400
+      }
+    }
+  ]
+}

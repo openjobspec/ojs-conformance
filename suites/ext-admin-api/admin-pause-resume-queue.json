@@ -1,0 +1,44 @@
+{
+  "test_id": "EXT-ADM-003",
+  "level": "ext",
+  "category": "admin-api",
+  "name": "admin-pause-resume-queue",
+  "description": "Pausing a queue via the admin API MUST prevent FETCH from returning jobs. Resuming MUST restore normal behavior.",
+  "spec_ref": "ojs-admin-api#section-6.3",
+  "tags": ["ext", "admin-api", "queues", "pause"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue a job",
+      "path": "/ojs/v1/jobs",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "type": "test.admin.pause",
+        "args": [{"n": 1}],
+        "options": { "queue": "admin-pause-test" }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "pause the queue",
+      "path": "/ojs/v1/admin/queues/admin-pause-test/pause",
+      "assertions": {
+        "status": 200,
+        "body": { "$.paused": true }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "resume the queue",
+      "path": "/ojs/v1/admin/queues/admin-pause-test/resume",
+      "assertions": {
+        "status": 200,
+        "body": { "$.paused": false }
+      }
+    }
+  ]
+}

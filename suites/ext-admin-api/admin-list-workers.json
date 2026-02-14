@@ -1,0 +1,26 @@
+{
+  "test_id": "EXT-ADM-005",
+  "level": "ext",
+  "category": "admin-api",
+  "name": "admin-list-workers",
+  "description": "GET /ojs/v1/admin/workers MUST return a list of connected workers with summary counts.",
+  "spec_ref": "ojs-admin-api#section-9.1",
+  "tags": ["ext", "admin-api", "workers"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "list workers",
+      "path": "/ojs/v1/admin/workers",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.items": { "$type": "array" },
+          "$.summary.total": { "$type": "number" },
+          "$.pagination.total": { "$type": "number" }
+        }
+      }
+    }
+  ]
+}

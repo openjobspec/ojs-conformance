@@ -1,0 +1,43 @@
+{
+  "test_id": "EXT-ADM-002",
+  "level": "ext",
+  "category": "admin-api",
+  "name": "admin-list-queues",
+  "description": "GET /ojs/v1/admin/queues MUST return a paginated list of queues with per-state counts.",
+  "spec_ref": "ojs-admin-api#section-6.1",
+  "tags": ["ext", "admin-api", "queues"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "seed a job to ensure at least one queue exists",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.admin.queue",
+        "args": [{"key": "value"}],
+        "options": { "queue": "admin-test-queue" }
+      },
+      "assertions": { "status": 201 }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "list all queues",
+      "path": "/ojs/v1/admin/queues",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.items": { "$type": "array" },
+          "$.items[0].name": { "$type": "string" },
+          "$.items[0].counts.available": { "$type": "number" },
+          "$.items[0].counts.active": { "$type": "number" },
+          "$.pagination.total": { "$gte": 1 }
+        }
+      }
+    }
+  ]
+}
