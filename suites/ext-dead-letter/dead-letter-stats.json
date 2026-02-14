@@ -1,0 +1,24 @@
+{
+  "test_id": "EXT-DLQ-002",
+  "level": "ext",
+  "category": "dead-letter",
+  "name": "dead-letter-stats",
+  "description": "GET /ojs/v1/admin/dead-letter/stats MUST return the total count of dead letter jobs.",
+  "spec_ref": "ojs-dead-letter#section-10",
+  "tags": ["ext", "dead-letter", "stats"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "fetch dead letter stats",
+      "path": "/ojs/v1/admin/dead-letter/stats",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.total": { "$type": "number" }
+        }
+      }
+    }
+  ]
+}

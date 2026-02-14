@@ -1,0 +1,26 @@
+{
+  "test_id": "EXT-DLQ-001",
+  "level": "ext",
+  "category": "dead-letter",
+  "name": "dead-letter-list",
+  "description": "GET /ojs/v1/admin/dead-letter MUST return a paginated list of dead letter jobs.",
+  "spec_ref": "ojs-dead-letter#section-10",
+  "tags": ["ext", "dead-letter", "list"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "list dead letter jobs",
+      "path": "/ojs/v1/admin/dead-letter",
+      "headers": { "Accept": "application/json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.items": { "$type": "array" },
+          "$.pagination.total": { "$type": "number" },
+          "$.pagination.page": { "$gte": 1 }
+        }
+      }
+    }
+  ]
+}
