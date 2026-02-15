@@ -1,0 +1,55 @@
+{
+  "test_id": "L0-OPS-017",
+  "level": 0,
+  "category": "operations",
+  "name": "error-duplicate-job",
+  "description": "Enqueueing a job with a client-provided ID that already exists MUST return 409 Conflict with error code 'duplicate'.",
+  "spec_ref": "ojs-errors#section-3.2",
+  "tags": ["level-0", "operations", "error-catalog", "duplicate"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": [{"message": "first"}],
+        "id": "019539a4-aaaa-7000-8000-111111111111"
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "019539a4-aaaa-7000-8000-111111111111"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": [{"message": "duplicate"}],
+        "id": "019539a4-aaaa-7000-8000-111111111111"
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error.code": "duplicate",
+          "$.error.message": { "$exists": true, "$type": "string" },
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}

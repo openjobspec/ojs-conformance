@@ -1,0 +1,30 @@
+{
+  "test_id": "L0-OPS-015",
+  "level": 0,
+  "category": "operations",
+  "name": "error-validation-invalid-payload",
+  "description": "Sending a request with invalid JSON MUST return a 400 Bad Request with error code 'invalid_payload'. The error response MUST include code, message, and retryable fields per the OJS error catalog.",
+  "spec_ref": "ojs-errors#section-3.1",
+  "tags": ["level-0", "operations", "error-catalog", "validation"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "raw_body": "{ invalid json }",
+      "assertions": {
+        "status": 400,
+        "body": {
+          "$.error.code": "invalid_payload",
+          "$.error.message": { "$exists": true, "$type": "string" },
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}

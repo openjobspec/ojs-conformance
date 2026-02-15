@@ -1,0 +1,86 @@
+{
+  "test_id": "L0-OPS-018",
+  "level": 0,
+  "category": "operations",
+  "name": "ack-with-result-retrievable",
+  "description": "After ACKing a job with a result, the result MUST be retrievable via GET /ojs/v1/jobs/:id. The job envelope MUST contain the result field with the exact value submitted during ACK.",
+  "spec_ref": "ojs-results#section-3",
+  "tags": ["level-0", "operations", "results", "retrieval"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": [{"message": "result-test"}],
+        "options": { "queue": "conformance-result-test" }
+      },
+      "assertions": {
+        "status": 201,
+        "body": { "$.job.id": { "$exists": true } }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-result-test"],
+        "worker_id": "test-worker-result"
+      },
+      "assertions": {
+        "status": 200,
+        "body": { "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}" }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "ack",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {
+          "processed": true,
+          "output_count": 42,
+          "summary": "Completed successfully"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": { "$.state": "completed" }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed",
+          "$.job.result.processed": true,
+          "$.job.result.output_count": 42,
+          "$.job.result.summary": "Completed successfully"
+        }
+      }
+    }
+  ]
+}

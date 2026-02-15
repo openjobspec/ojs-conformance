@@ -1,0 +1,30 @@
+{
+  "test_id": "L0-OPS-019",
+  "level": 0,
+  "category": "operations",
+  "name": "manifest-endpoint",
+  "description": "The server MUST expose a manifest at GET /ojs/manifest that describes the implementation's conformance level, supported protocols, and extensions. The manifest MUST include specversion, implementation name, and conformance_level.",
+  "spec_ref": "ojs-http-binding#section-8",
+  "tags": ["level-0", "operations", "manifest", "discovery"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "manifest",
+      "path": "/ojs/manifest",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.specversion": "1.0.0-rc.1",
+          "$.implementation": { "$exists": true },
+          "$.implementation.name": { "$exists": true, "$type": "string" },
+          "$.conformance_level": { "$exists": true },
+          "$.protocols": { "$exists": true }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "test_id": "L0-OPS-016",
+  "level": 0,
+  "category": "operations",
+  "name": "error-job-not-found",
+  "description": "Requesting a non-existent job ID MUST return 404 Not Found with error code 'not_found'.",
+  "spec_ref": "ojs-errors#section-3.4",
+  "tags": ["level-0", "operations", "error-catalog", "not-found"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/019539a4-0000-7000-8000-000000000000",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 404,
+        "body": {
+          "$.error.code": "not_found",
+          "$.error.message": { "$exists": true, "$type": "string" },
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}

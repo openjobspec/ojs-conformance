@@ -1,0 +1,28 @@
+{
+  "test_id": "L0-OPS-020",
+  "level": 0,
+  "category": "operations",
+  "name": "health-endpoint",
+  "description": "The server MUST expose a health check at GET /ojs/v1/health. A healthy server MUST return 200 OK with status 'ok'.",
+  "spec_ref": "ojs-http-binding#section-9",
+  "tags": ["level-0", "operations", "health", "discovery"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "health",
+      "path": "/ojs/v1/health",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.status": {
+            "$in": ["ok", "healthy", "degraded"]
+          }
+        }
+      }
+    }
+  ]
+}
