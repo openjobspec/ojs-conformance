@@ -1,0 +1,77 @@
+{
+  "test_id": "L1-TMO-001",
+  "level": 1,
+  "category": "timeout",
+  "name": "timeout-execution-triggers-failure",
+  "description": "A job with a short execution timeout (timeout_ms=2000) that is not completed within the timeout period MUST be treated as failed. If retries remain, it transitions to 'retryable'. The error MUST indicate a timeout occurred.",
+  "spec_ref": "ojs-timeouts#section-3.1",
+  "tags": ["level-1", "timeout", "execution"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.slow",
+        "args": [{"duration_ms": 10000}],
+        "options": {
+          "queue": "conformance-timeout-test",
+          "timeout_ms": 2000,
+          "retry": {
+            "max_attempts": 2,
+            "initial_interval": "PT1S",
+            "jitter": false,
+            "on_exhaustion": "discard"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "queues": ["conformance-timeout-test"],
+        "worker_id": "worker-timeout-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "description": "Wait for execution timeout to expire (2s timeout + 1s buffer)",
+      "delay_ms": 3500,
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": { "Accept": "application/openjobspec+json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": {
+            "$in": ["retryable", "available"]
+          },
+          "$.job.error": { "$exists": true }
+        }
+      }
+    }
+  ]
+}
