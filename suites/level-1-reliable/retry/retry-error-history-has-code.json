@@ -1,0 +1,103 @@
+{
+  "test_id": "L1-RTR-015",
+  "level": 1,
+  "category": "retry",
+  "name": "retry-error-history-has-code",
+  "description": "The error history (errors array) on a job MUST contain structured entries with code, message, attempt, and occurred_at for each failure. This verifies the error catalog format is preserved in the job's error history.",
+  "spec_ref": "ojs-errors#section-5",
+  "tags": ["level-1", "retry", "error-history", "error-catalog"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.fail_once",
+        "args": [{"action": "error-history-code-test"}],
+        "options": {
+          "queue": "conformance-error-history-code",
+          "retry": {
+            "max_attempts": 2,
+            "initial_interval": "PT1S",
+            "backoff_coefficient": 1.0,
+            "jitter": false,
+            "on_exhaustion": "discard"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "queues": ["conformance-error-history-code"],
+        "worker_id": "worker-err-hist-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "nack",
+      "path": "/ojs/v1/workers/nack",
+      "headers": { "Content-Type": "application/openjobspec+json" },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "error": {
+          "code": "handler_error",
+          "message": "First attempt failure for error history test",
+          "retryable": true,
+          "details": {
+            "error_class": "ConnectionError",
+            "host": "db.example.com"
+          }
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "retryable",
+          "$.attempt": 1
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "delay_ms": 1200,
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": { "Accept": "application/openjobspec+json" },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.errors": "array:length:1",
+          "$.job.errors[0].code": { "$exists": true },
+          "$.job.errors[0].message": { "$exists": true, "$type": "string" },
+          "$.job.errors[0].attempt": 1,
+          "$.job.errors[0].occurred_at": "string:datetime"
+        }
+      }
+    }
+  ]
+}
