@@ -1,0 +1,48 @@
+{
+  "test_id": "L0-EVT-001",
+  "level": 0,
+  "category": "events",
+  "name": "event-job-enqueued",
+  "description": "When a job is enqueued, the server SHOULD emit a 'job.enqueued' event. The event MUST include the job_id, job_type, and queue in the event data if the events endpoint is supported.",
+  "spec_ref": "ojs-events#section-3.1",
+  "tags": ["level-0", "events", "job-enqueued"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.echo",
+        "args": [{"message": "event-test"}],
+        "options": { "queue": "conformance-events-test" }
+      },
+      "assertions": {
+        "status": 201,
+        "body": { "$.job.id": { "$exists": true } }
+      }
+    },
+    {
+      "id": "step-2",
+      "delay_ms": 500,
+      "action": "GET",
+      "intent": "list-events",
+      "path": "/ojs/v1/events?types=job.enqueued&queues=conformance-events-test&limit=10",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.events": "array:min_length:1",
+          "$.events[0].type": "job.enqueued",
+          "$.events[0].data.job_type": "test.echo",
+          "$.events[0].data.queue": "conformance-events-test"
+        }
+      }
+    }
+  ]
+}
