@@ -13,11 +13,13 @@ ojs-conformance/
   suites/                          # Test case JSON files
     level-0-core/                  # Level 0: Core conformance
       envelope/                    # Job envelope validation
+      events/                      # Lifecycle event emission
       lifecycle/                   # State machine transitions
-      operations/                  # PUSH/FETCH/ACK/FAIL/CANCEL/INFO
+      operations/                  # PUSH/FETCH/ACK/FAIL/CANCEL/INFO/manifest/health
     level-1-reliable/              # Level 1: Reliable delivery
-      retry/                       # Retry policies & backoff
+      retry/                       # Retry policies, backoff & error history
       dead-letter/                 # Dead letter queue
+      timeout/                     # Execution timeout handling
       visibility/                  # Visibility timeout
       worker/                      # Worker heartbeat & signals
     level-2-scheduled/             # Level 2: Scheduled execution
@@ -34,6 +36,10 @@ ojs-conformance/
       rate-limit/                  # Rate limiting
       bulk/                        # Batch enqueue
       queue-ops/                   # Queue pause/resume/stats
+    ext-admin-api/                 # Extension: Admin API
+    ext-backpressure/              # Extension: Backpressure
+    ext-dead-letter/               # Extension: Dead letter (extended)
+    ext-rate-limiting/             # Extension: Rate limiting (extended)
   runner/                          # Test runner implementations
     http/                          # Go-based HTTP test runner
   lib/                             # Shared library code
@@ -43,8 +49,8 @@ ojs-conformance/
 
 | Level | Name | Description |
 |-------|------|-------------|
-| 0 | Core | Job envelope, 8-state lifecycle, PUSH/FETCH/ACK/FAIL |
-| 1 | Reliable | Retry with backoff, dead letter queue, heartbeat, visibility timeout |
+| 0 | Core | Job envelope, 8-state lifecycle, PUSH/FETCH/ACK/FAIL, error catalog, manifest, health |
+| 1 | Reliable | Retry with backoff, dead letter queue, heartbeat, visibility timeout, execution timeout, error history |
 | 2 | Scheduled | Delayed jobs, cron scheduling, job expiration |
 | 3 | Orchestration | Chain, group, batch workflows |
 | 4 | Advanced | Priority queues, unique jobs, batch enqueue, queue ops |
