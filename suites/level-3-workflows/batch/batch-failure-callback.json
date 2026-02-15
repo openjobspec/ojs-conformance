@@ -45,7 +45,7 @@
             ],
             "options": {
               "queue": "batch-fail-test",
-              "retry_policy": {
+              "retry": {
                 "max_attempts": 1
               }
             }
@@ -116,7 +116,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     },
@@ -155,8 +155,9 @@
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-bat-fail-2",
         "error": {
-          "type": "ProcessingError",
-          "message": "Intentional failure to trigger on_failure callback"
+          "code": "handler_error",
+          "message": "Intentional failure to trigger on_failure callback",
+          "retryable": true
         }
       },
       "assertions": {

@@ -91,7 +91,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     },

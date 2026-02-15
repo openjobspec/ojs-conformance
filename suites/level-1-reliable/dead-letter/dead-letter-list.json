@@ -29,7 +29,7 @@
         ],
         "options": {
           "queue": "dlq-list-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 1,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -65,7 +65,7 @@
         ],
         "options": {
           "queue": "dlq-list-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 1,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -110,17 +110,18 @@
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "job_id": "{{steps.step-3.response.body.job.id}}",
+        "job_id": "{{steps.step-3.response.body.jobs[0].id}}",
         "worker_id": "worker-dlq-list-1",
         "error": {
-          "type": "ProcessingError",
-          "message": "First job failure"
+          "code": "handler_error",
+          "message": "First job failure",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "discarded"
+          "$.state": "discarded"
         }
       }
     },
@@ -151,17 +152,18 @@
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "job_id": "{{steps.step-5.response.body.job.id}}",
+        "job_id": "{{steps.step-5.response.body.jobs[0].id}}",
         "worker_id": "worker-dlq-list-1",
         "error": {
-          "type": "ProcessingError",
-          "message": "Second job failure"
+          "code": "handler_error",
+          "message": "Second job failure",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "discarded"
+          "$.state": "discarded"
         }
       }
     },

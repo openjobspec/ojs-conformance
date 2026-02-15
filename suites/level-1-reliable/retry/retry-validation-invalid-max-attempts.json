@@ -29,7 +29,7 @@
         ],
         "options": {
           "queue": "retry-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": -1,
             "initial_interval": "PT1S",
             "backoff_coefficient": 2.0,

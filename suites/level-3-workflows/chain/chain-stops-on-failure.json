@@ -47,7 +47,7 @@
             ],
             "options": {
               "queue": "chain-fail-test",
-              "retry_policy": {
+              "retry": {
                 "max_attempts": 1
               }
             }
@@ -118,7 +118,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     },
@@ -159,14 +159,14 @@
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-chain-fail-1",
         "error": {
-          "type": "PermanentError",
+          "code": "handler_error",
           "message": "Intentional failure to test chain stop behavior"
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "discarded"
+          "$.state": "discarded"
         }
       }
     },

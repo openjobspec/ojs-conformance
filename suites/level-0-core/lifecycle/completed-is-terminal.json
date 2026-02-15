@@ -78,9 +78,9 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "completed",
-          "$.job.completed_at": "string:datetime"
+          "$.id": "{{steps.step-1.response.body.job.id}}",
+          "$.state": "completed",
+          "$.completed_at": "string:datetime"
         }
       }
     },

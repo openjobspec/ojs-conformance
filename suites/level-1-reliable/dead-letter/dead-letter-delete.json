@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "dlq-delete-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 1,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -64,8 +64,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -81,14 +81,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-dlq-delete-1",
         "error": {
-          "type": "ProcessingError",
-          "message": "Failure to move to DLQ for deletion test"
+          "code": "handler_error",
+          "message": "Failure to move to DLQ for deletion test",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "discarded"
+          "$.state": "discarded"
         }
       }
     },

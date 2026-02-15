@@ -86,8 +86,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "retryable"
+          "$.id": "{{steps.step-1.response.body.job.id}}",
+          "$.state": "retryable"
         }
       }
     },

@@ -5,48 +5,85 @@
   "name": "dead-letter-retry",
   "description": "A dead letter job retried via POST /ojs/v1/admin/dead-letter/{id}/retry MUST be re-enqueued with state available and attempt reset.",
   "spec_ref": "ojs-dead-letter#section-6.1",
-  "tags": ["ext", "dead-letter", "retry"],
+  "tags": [
+    "ext",
+    "dead-letter",
+    "retry"
+  ],
   "steps": [
     {
       "id": "step-1",
       "action": "POST",
       "intent": "enqueue a job with max_attempts=1 so it enters DLQ on first failure",
       "path": "/ojs/v1/jobs",
-      "headers": { "Content-Type": "application/openjobspec+json" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
       "body": {
         "type": "test.dlq.retry",
-        "args": [{"n": 1}],
+        "args": [
+          {
+            "n": 1
+          }
+        ],
         "options": {
           "queue": "dlq-retry-test",
-          "retry": { "max_attempts": 1, "on_exhaustion": "dead_letter" }
+          "retry": {
+            "max_attempts": 1,
+            "on_exhaustion": "dead_letter"
+          }
         }
       },
       "assertions": {
         "status": 201,
-        "body": { "$.job.id": { "$exists": true } }
+        "body": {
+          "$.job.id": {
+            "$exists": true
+          }
+        }
       },
-      "capture": { "job_id": "$.job.id" }
+      "capture": {
+        "job_id": "$.job.id"
+      }
     },
     {
       "id": "step-2",
       "action": "POST",
       "intent": "fetch the job",
       "path": "/ojs/v1/workers/fetch",
-      "headers": { "Content-Type": "application/openjobspec+json" },
-      "body": { "queues": ["dlq-retry-test"], "count": 1, "worker_id": "test-dlq-worker" },
-      "assertions": { "status": 200 }
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": [
+          "dlq-retry-test"
+        ],
+        "count": 1,
+        "worker_id": "test-dlq-worker"
+      },
+      "assertions": {
+        "status": 200
+      }
     },
     {
       "id": "step-3",
       "action": "POST",
       "intent": "fail the job to send to DLQ",
       "path": "/ojs/v1/workers/nack",
-      "headers": { "Content-Type": "application/openjobspec+json" },
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
       "body": {
         "job_id": "{{job_id}}",
-        "error": { "type": "TestError", "message": "deliberate failure for DLQ test" }
+        "error": {
+          "code": "handler_error",
+          "message": "deliberate failure for DLQ test",
+          "retryable": true
+        }
       },
-      "assertions": { "status": 200 }
+      "assertions": {
+        "status": 200
+      }
     },
     {
       "id": "step-4",

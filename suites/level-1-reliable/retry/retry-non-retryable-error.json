@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "retry-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 5,
             "initial_interval": "PT1S",
             "backoff_coefficient": 2.0,
@@ -67,8 +67,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -84,15 +84,19 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-non-retryable-1",
         "error": {
-          "type": "FatalError",
-          "message": "Non-retryable failure - should not retry"
+          "code": "handler_error",
+          "message": "Non-retryable failure - should not retry",
+          "retryable": false,
+          "details": {
+            "error_class": "FatalError"
+          }
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "discarded",
-          "$.job.attempt": 1
+          "$.state": "discarded",
+          "$.attempt": 1
         }
       }
     },

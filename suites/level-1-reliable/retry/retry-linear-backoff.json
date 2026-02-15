@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "retry-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 5,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -65,8 +65,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -82,16 +82,17 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-linear-1",
         "error": {
-          "type": "TransientError",
-          "message": "First failure - expect 1s delay"
+          "code": "handler_error",
+          "message": "First failure - expect 1s delay",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "retryable",
-          "$.job.attempt": 1,
-          "$.job.retry_delay_ms": "~1000"
+          "$.state": "retryable",
+          "$.attempt": 1,
+          "$.retry_delay_ms": "~1000"
         }
       }
     },
@@ -113,8 +114,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 2
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 2
         }
       }
     },
@@ -130,16 +131,17 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-linear-1",
         "error": {
-          "type": "TransientError",
-          "message": "Second failure - expect 2s delay"
+          "code": "handler_error",
+          "message": "Second failure - expect 2s delay",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "retryable",
-          "$.job.attempt": 2,
-          "$.job.retry_delay_ms": "~2000"
+          "$.state": "retryable",
+          "$.attempt": 2,
+          "$.retry_delay_ms": "~2000"
         }
       }
     },
@@ -161,8 +163,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 3
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 3
         }
       }
     },
@@ -178,16 +180,17 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-linear-1",
         "error": {
-          "type": "TransientError",
-          "message": "Third failure - expect 3s delay"
+          "code": "handler_error",
+          "message": "Third failure - expect 3s delay",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "retryable",
-          "$.job.attempt": 3,
-          "$.job.retry_delay_ms": "~3000"
+          "$.state": "retryable",
+          "$.attempt": 3,
+          "$.retry_delay_ms": "~3000"
         }
       }
     }

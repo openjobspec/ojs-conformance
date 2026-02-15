@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "retry-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 5,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -65,9 +65,9 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active",
-          "$.job.attempt": 1
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -83,14 +83,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-counter-1",
         "error": {
-          "type": "TransientError",
-          "message": "Attempt 0 failed"
+          "code": "handler_error",
+          "message": "Attempt 0 failed",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.attempt": 1
+          "$.attempt": 1
         }
       }
     },
@@ -112,9 +113,9 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active",
-          "$.job.attempt": 2
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 2
         }
       }
     },
@@ -130,14 +131,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-counter-1",
         "error": {
-          "type": "TransientError",
-          "message": "Attempt 1 failed"
+          "code": "handler_error",
+          "message": "Attempt 1 failed",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.attempt": 2
+          "$.attempt": 2
         }
       }
     },
@@ -159,9 +161,9 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active",
-          "$.job.attempt": 3
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].attempt": 3
         }
       }
     },
@@ -177,14 +179,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-counter-1",
         "error": {
-          "type": "TransientError",
-          "message": "Attempt 2 failed"
+          "code": "handler_error",
+          "message": "Attempt 2 failed",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.attempt": 3
+          "$.attempt": 3
         }
       }
     },

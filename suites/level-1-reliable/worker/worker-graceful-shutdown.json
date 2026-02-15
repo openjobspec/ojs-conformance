@@ -29,7 +29,7 @@
         ],
         "options": {
           "queue": "worker-test",
-          "visibility_timeout": "PT30S",
+          "visibility_timeout_ms": 30000,
           "metadata": {
             "test_directive": "terminate"
           }
@@ -60,8 +60,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active"
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
         }
       }
     },
@@ -76,14 +76,15 @@
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "job_id": "{{steps.step-1.response.body.job.id}}",
-        "worker_id": "worker-terminate-1"
+        "worker_id": "worker-terminate-1",
+        "active_jobs": [
+          "{{steps.step-1.response.body.job.id}}"
+        ]
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.state": "active",
-          "$.directive": "terminate"
+          "$.state": "terminate"
         }
       }
     },
@@ -100,15 +101,16 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-terminate-1",
         "error": {
-          "type": "WorkerShutdown",
-          "message": "Worker received terminate directive - releasing job"
+          "code": "cancelled",
+          "message": "Worker received terminate directive - releasing job",
+          "retryable": false
         },
         "requeue": true
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "available"
+          "$.state": "available"
         }
       }
     },
@@ -145,8 +147,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active"
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
         }
       }
     },
@@ -165,7 +167,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     }

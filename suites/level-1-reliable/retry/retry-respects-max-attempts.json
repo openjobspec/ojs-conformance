@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "retry-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 3,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -65,8 +65,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -82,15 +82,16 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-max-attempts-1",
         "error": {
-          "type": "TransientError",
-          "message": "Failure attempt 1 of 3"
+          "code": "handler_error",
+          "message": "Failure attempt 1 of 3",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "retryable",
-          "$.job.attempt": 1
+          "$.state": "retryable",
+          "$.attempt": 1
         }
       }
     },
@@ -112,8 +113,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 2
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 2
         }
       }
     },
@@ -129,15 +130,16 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-max-attempts-1",
         "error": {
-          "type": "TransientError",
-          "message": "Failure attempt 2 of 3"
+          "code": "handler_error",
+          "message": "Failure attempt 2 of 3",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "retryable",
-          "$.job.attempt": 2
+          "$.state": "retryable",
+          "$.attempt": 2
         }
       }
     },
@@ -159,8 +161,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 3
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 3
         }
       }
     },
@@ -176,15 +178,16 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-max-attempts-1",
         "error": {
-          "type": "TransientError",
-          "message": "Failure attempt 3 of 3 - should exhaust retries"
+          "code": "handler_error",
+          "message": "Failure attempt 3 of 3 - should exhaust retries",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "discarded",
-          "$.job.attempt": 3
+          "$.state": "discarded",
+          "$.attempt": 3
         }
       }
     },

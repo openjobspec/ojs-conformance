@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "retry-test",
-          "retry_policy": {
+          "retry": {
             "max_attempts": 4,
             "initial_interval": "PT1S",
             "backoff_coefficient": 1.0,
@@ -64,8 +64,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -81,14 +81,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-error-history-1",
         "error": {
-          "type": "ConnectionTimeout",
-          "message": "Database connection timed out"
+          "code": "handler_error",
+          "message": "Database connection timed out",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.attempt": 1
+          "$.attempt": 1
         }
       }
     },
@@ -110,8 +111,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 2
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 2
         }
       }
     },
@@ -127,14 +128,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-error-history-1",
         "error": {
-          "type": "RateLimitExceeded",
-          "message": "API rate limit reached"
+          "code": "handler_error",
+          "message": "API rate limit reached",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.attempt": 2
+          "$.attempt": 2
         }
       }
     },
@@ -156,8 +158,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 3
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].attempt": 3
         }
       }
     },
@@ -173,14 +175,15 @@
         "job_id": "{{steps.step-1.response.body.job.id}}",
         "worker_id": "worker-error-history-1",
         "error": {
-          "type": "InternalServerError",
-          "message": "Unexpected null reference"
+          "code": "handler_error",
+          "message": "Unexpected null reference",
+          "retryable": true
         }
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.attempt": 3
+          "$.attempt": 3
         }
       }
     },

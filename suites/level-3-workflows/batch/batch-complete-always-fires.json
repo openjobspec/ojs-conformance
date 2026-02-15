@@ -46,7 +46,7 @@
             ],
             "options": {
               "queue": "batch-always-test",
-              "retry_policy": {
+              "retry": {
                 "max_attempts": 1
               }
             }
@@ -137,7 +137,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     },
@@ -175,8 +175,9 @@
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-bat-always-2",
         "error": {
-          "type": "ProcessingError",
-          "message": "Intentional failure to test on_complete fires regardless"
+          "code": "handler_error",
+          "message": "Intentional failure to test on_complete fires regardless",
+          "retryable": true
         }
       },
       "assertions": {

@@ -3,7 +3,7 @@
   "level": 1,
   "category": "worker",
   "name": "worker-heartbeat",
-  "description": "A worker MUST be able to send a heartbeat for an active job. The heartbeat response MUST include a state directive indicating the current desired state for the worker (e.g., 'continue'). The heartbeat confirms the worker is still alive and processing.",
+  "description": "A worker MUST be able to send a heartbeat with active_jobs. The heartbeat response MUST include a state directive indicating the current desired state for the worker ('running', 'quiet', or 'terminate'). The heartbeat confirms the worker is still alive and extends visibility timeouts.",
   "spec_ref": "ojs-worker-protocol#section-4",
   "tags": [
     "level-1",
@@ -28,7 +28,7 @@
         ],
         "options": {
           "queue": "worker-test",
-          "visibility_timeout": "PT30S"
+          "visibility_timeout_ms": 30000
         }
       },
       "assertions": {
@@ -56,8 +56,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active"
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
         }
       }
     },
@@ -71,14 +71,15 @@
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "job_id": "{{steps.step-1.response.body.job.id}}",
-        "worker_id": "worker-heartbeat-1"
+        "worker_id": "worker-heartbeat-1",
+        "active_jobs": [
+          "{{steps.step-1.response.body.job.id}}"
+        ]
       },
       "assertions": {
         "status": 200,
         "body": {
-          "$.state": "active",
-          "$.directive": "continue"
+          "$.state": "running"
         }
       }
     },
@@ -97,7 +98,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     }

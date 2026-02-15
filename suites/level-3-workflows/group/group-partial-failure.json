@@ -45,7 +45,7 @@
             ],
             "options": {
               "queue": "group-partial-test",
-              "retry_policy": {
+              "retry": {
                 "max_attempts": 1
               }
             }
@@ -114,7 +114,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     },
@@ -153,8 +153,9 @@
         "job_id": "{{steps.step-4.response.body.jobs[0].id}}",
         "worker_id": "worker-grp-partial-2",
         "error": {
-          "type": "ProcessingError",
-          "message": "Intentional failure for partial failure test"
+          "code": "handler_error",
+          "message": "Intentional failure for partial failure test",
+          "retryable": true
         }
       },
       "assertions": {
@@ -202,7 +203,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     },

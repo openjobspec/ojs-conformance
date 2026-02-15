@@ -29,7 +29,7 @@
         ],
         "options": {
           "queue": "visibility-test",
-          "visibility_timeout": "PT3S"
+          "visibility_timeout_ms": 3000
         }
       },
       "assertions": {
@@ -57,8 +57,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active"
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
         }
       }
     },
@@ -111,8 +111,8 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.state": "active"
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
         }
       }
     },
@@ -131,7 +131,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.job.state": "completed"
+          "$.state": "completed"
         }
       }
     }
