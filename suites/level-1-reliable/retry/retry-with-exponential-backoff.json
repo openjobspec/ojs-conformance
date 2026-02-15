@@ -67,7 +67,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 0
+          "$.job.attempt": 1
         }
       }
     },
@@ -116,7 +116,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 1,
+          "$.job.attempt": 2,
           "$.job.retry_delay_ms": "~1000"
         }
       }
@@ -166,7 +166,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 2,
+          "$.job.attempt": 3,
           "$.job.retry_delay_ms": "~2000"
         }
       }

@@ -3,7 +3,7 @@
   "level": 1,
   "category": "retry",
   "name": "retry-attempt-counter-increments",
-  "description": "Each time a job fails and is retried, the attempt counter MUST increment by 1. The initial attempt is 0, and after each failure the attempt number MUST reflect the total number of completed attempts.",
+  "description": "Each time a job fails and is retried, the attempt counter MUST increment by 1. The first attempt is 1, and after each failure the attempt number MUST reflect the current attempt number (1-indexed).",
   "spec_ref": "ojs-retry#section-10",
   "tags": [
     "level-1",
@@ -67,7 +67,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 0
+          "$.job.attempt": 1
         }
       }
     },
@@ -114,7 +114,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 1
+          "$.job.attempt": 2
         }
       }
     },
@@ -161,7 +161,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 2
+          "$.job.attempt": 3
         }
       }
     },

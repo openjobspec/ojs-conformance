@@ -68,7 +68,7 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 0
+          "$.jobs[0].attempt": 1
         }
       }
     },

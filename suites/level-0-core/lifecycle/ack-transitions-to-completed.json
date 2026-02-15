@@ -58,7 +58,7 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 0
+          "$.jobs[0].attempt": 1
         }
       }
     },
@@ -99,7 +99,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "completed",
-          "$.job.attempt": 0,
+          "$.job.attempt": 1,
           "$.job.completed_at": "string:datetime",
           "$.job.started_at": "string:datetime"
         }

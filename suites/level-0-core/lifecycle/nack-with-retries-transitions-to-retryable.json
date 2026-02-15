@@ -3,7 +3,7 @@
   "level": 0,
   "category": "lifecycle",
   "name": "nack-with-retries-transitions-to-retryable",
-  "description": "Failing (NACK) an active job that has remaining retry attempts MUST transition it to the 'retryable' state. With max_attempts=3 and attempt=0, all retries remain so the job MUST become retryable, not discarded.",
+  "description": "Failing (NACK) an active job that has remaining retry attempts MUST transition it to the 'retryable' state. With max_attempts=3 and attempt=1 (first attempt), retries remain so the job MUST become retryable, not discarded.",
   "spec_ref": "ojs-core#section-6.2",
   "tags": [
     "level-0",
@@ -64,7 +64,7 @@
         "body": {
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 0
+          "$.jobs[0].attempt": 1
         }
       }
     },

@@ -3,7 +3,7 @@
   "level": 0,
   "category": "operations",
   "name": "fetch-from-queue",
-  "description": "PUSH a job to the 'default' queue, then FETCH from 'default'. Verify the fetched job has state=active, attempt=0, and started_at is set.",
+  "description": "PUSH a job to the 'default' queue, then FETCH from 'default'. Verify the fetched job has state=active, attempt=1, and started_at is set.",
   "spec_ref": "ojs-core#section-7.2",
   "tags": [
     "level-0",
@@ -69,7 +69,7 @@
           "$.jobs[0].type": "test.echo",
           "$.jobs[0].queue": "default",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 0,
+          "$.jobs[0].attempt": 1,
           "$.jobs[0].args[0].message": "fetch-from-queue-test",
           "$.jobs[0].started_at": {
             "$exists": true,

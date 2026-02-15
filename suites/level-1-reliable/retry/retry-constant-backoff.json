@@ -65,7 +65,7 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 0
+          "$.job.attempt": 1
         }
       }
     },
@@ -113,7 +113,7 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.job.attempt": 2
         }
       }
     },
@@ -161,7 +161,7 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 2
+          "$.job.attempt": 3
         }
       }
     },

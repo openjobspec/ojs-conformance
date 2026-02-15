@@ -3,7 +3,7 @@
   "level": 0,
   "category": "lifecycle",
   "name": "fetch-transitions-to-active",
-  "description": "Fetching an available job MUST transition it to the 'active' state. The response MUST set attempt to 0 (no completed attempts yet) and populate started_at with a timestamp.",
+  "description": "Fetching an available job MUST transition it to the 'active' state. The response MUST set attempt to 1 (first attempt) and populate started_at with a timestamp.",
   "spec_ref": "ojs-core#section-6.2",
   "tags": [
     "level-0",
@@ -59,7 +59,7 @@
           "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
           "$.jobs[0].type": "lifecycle.test.fetch_active",
           "$.jobs[0].state": "active",
-          "$.jobs[0].attempt": 0,
+          "$.jobs[0].attempt": 1,
           "$.jobs[0].started_at": "string:datetime",
           "$.jobs[0].queue": "default"
         }
@@ -78,7 +78,7 @@
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.state": "active",
-          "$.job.attempt": 0,
+          "$.job.attempt": 1,
           "$.job.started_at": "string:datetime",
           "$.job.completed_at": "absent"
         }

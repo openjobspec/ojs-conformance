@@ -65,7 +65,7 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 0
+          "$.job.attempt": 1
         }
       }
     },
@@ -111,7 +111,7 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 1
+          "$.job.attempt": 2
         }
       }
     },
@@ -157,7 +157,7 @@
         "status": 200,
         "body": {
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
-          "$.job.attempt": 2
+          "$.job.attempt": 3
         }
       }
     },
@@ -198,13 +198,13 @@
           "$.job.errors": "array:length:3",
           "$.job.errors[0].type": "ConnectionTimeout",
           "$.job.errors[0].message": "Database connection timed out",
-          "$.job.errors[0].attempt": 0,
+          "$.job.errors[0].attempt": 1,
           "$.job.errors[1].type": "RateLimitExceeded",
           "$.job.errors[1].message": "API rate limit reached",
-          "$.job.errors[1].attempt": 1,
+          "$.job.errors[1].attempt": 2,
           "$.job.errors[2].type": "InternalServerError",
           "$.job.errors[2].message": "Unexpected null reference",
-          "$.job.errors[2].attempt": 2
+          "$.job.errors[2].attempt": 3
         }
       }
     }
