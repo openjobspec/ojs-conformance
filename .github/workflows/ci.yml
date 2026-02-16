@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.22', '1.23', '1.24']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./... -race -count=1
+
+  validate-suites:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON test suites
+        run: |
+          echo "Validating all test suite JSON files..."
+          find suites -name '*.json' -exec sh -c '
+            for f; do
+              python3 -c "import json; json.load(open(\"$f\"))" 2>/dev/null || {
+                echo "::error file=$f::Invalid JSON"
+                exit 1
+              }
+            done
+          ' sh {} +
+          echo "All JSON files valid."
