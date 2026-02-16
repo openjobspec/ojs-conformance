@@ -1,6 +1,8 @@
 # Compiled Go binaries
 /http
+/grpc
 /runner/http/http
+/runner/grpc/grpc
 *.exe
 *.exe~
 *.dll
