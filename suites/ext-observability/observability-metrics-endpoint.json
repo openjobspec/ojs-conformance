@@ -1,0 +1,26 @@
+{
+  "test_id": "EXT-OBS-003",
+  "level": 0,
+  "category": "ext-observability",
+  "name": "observability-metrics-endpoint",
+  "description": "Verify GET /metrics returns Prometheus-format metrics. The endpoint MUST return a 200 response with text/plain content type containing metric lines.",
+  "spec_ref": "ojs-observability#section-4",
+  "tags": ["extension", "observability", "metrics", "prometheus"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "metrics",
+      "path": "/metrics",
+      "headers": {
+        "Accept": "text/plain"
+      },
+      "assertions": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      }
+    }
+  ]
+}

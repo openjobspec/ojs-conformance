@@ -1,0 +1,41 @@
+{
+  "test_id": "EXT-VER-002",
+  "level": 0,
+  "category": "ext-job-versioning",
+  "name": "job-versioning-schema-register",
+  "description": "PUT /ojs/v1/admin/schemas/{type}/{version} to register a schema for a job type version. Verify the server accepts the schema registration and returns 201 or 200.",
+  "spec_ref": "ojs-job-versioning#section-5",
+  "tags": ["extension", "job-versioning", "schema", "admin"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "register-schema",
+      "path": "/ojs/v1/admin/schemas/email.send/2",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "to": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          },
+          "required": ["to", "subject"]
+        }
+      },
+      "assertions": {
+        "status": {
+          "$in": [200, 201]
+        },
+        "body": {
+          "$.type": "email.send",
+          "$.version": 2
+        }
+      }
+    }
+  ]
+}

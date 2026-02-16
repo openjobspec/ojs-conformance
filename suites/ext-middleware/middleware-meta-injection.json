@@ -1,0 +1,61 @@
+{
+  "test_id": "EXT-MW-001",
+  "level": 0,
+  "category": "ext-middleware",
+  "name": "middleware-meta-injection",
+  "description": "Enqueue a job and verify that server-side enqueue middleware can inject additional meta fields into the job envelope. The injected fields should be visible when retrieving the job.",
+  "spec_ref": "ojs-middleware#section-3",
+  "tags": ["extension", "middleware", "meta-injection", "enqueue"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.middleware",
+        "args": [
+          {
+            "action": "meta-injection-test"
+          }
+        ],
+        "options": {
+          "queue": "conformance-middleware"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta": {
+            "$exists": true
+          }
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.type": "test.middleware",
+          "$.job.meta": {
+            "$exists": true
+          }
+        }
+      }
+    }
+  ]
+}

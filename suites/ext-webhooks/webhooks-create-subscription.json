@@ -1,0 +1,37 @@
+{
+  "test_id": "EXT-WHK-001",
+  "level": 0,
+  "category": "ext-webhooks",
+  "name": "webhooks-create-subscription",
+  "description": "POST /ojs/v1/webhooks/subscriptions to create a new webhook subscription for job completion events. Verify the server returns 201 with the subscription details including an assigned ID.",
+  "spec_ref": "ojs-webhooks#section-3",
+  "tags": ["extension", "webhooks", "create", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "create-subscription",
+      "path": "/ojs/v1/webhooks/subscriptions",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "url": "https://example.com/webhooks/ojs",
+        "events": ["job.completed", "job.failed"],
+        "secret": "whk_test_secret_001"
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.subscription.id": { "$exists": true },
+          "$.subscription.url": "https://example.com/webhooks/ojs",
+          "$.subscription.events": {
+            "$size": 2
+          },
+          "$.subscription.active": true
+        }
+      }
+    }
+  ]
+}

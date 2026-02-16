@@ -1,0 +1,65 @@
+{
+  "test_id": "EXT-OBS-001",
+  "level": 0,
+  "category": "ext-observability",
+  "name": "observability-trace-context",
+  "description": "Enqueue a job with a W3C traceparent in meta, then fetch the job. Verify the traceparent value is preserved through the enqueue/fetch cycle and available in the job envelope.",
+  "spec_ref": "ojs-observability#section-3",
+  "tags": ["extension", "observability", "trace-context", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.trace",
+        "args": [
+          {
+            "action": "trace-context-test"
+          }
+        ],
+        "meta": {
+          "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        },
+        "options": {
+          "queue": "conformance-obs-trace"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta.traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-obs-trace"],
+        "worker_id": "test-worker-obs-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].meta.traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        }
+      }
+    }
+  ]
+}

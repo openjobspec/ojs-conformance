@@ -1,0 +1,96 @@
+{
+  "test_id": "EXT-MT-002",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-tenant-isolation",
+  "description": "Enqueue jobs for two different tenants into the same queue. Fetch with each tenant's header and verify only the matching tenant's jobs are returned, ensuring tenant isolation.",
+  "spec_ref": "ojs-multi-tenancy#section-4",
+  "tags": ["extension", "multi-tenancy", "isolation", "security"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-alpha"
+      },
+      "body": {
+        "type": "test.tenant",
+        "args": [
+          {
+            "action": "isolation-test-alpha"
+          }
+        ],
+        "options": {
+          "queue": "conformance-tenant-isolation"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta.tenant_id": "tenant-alpha"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-beta"
+      },
+      "body": {
+        "type": "test.tenant",
+        "args": [
+          {
+            "action": "isolation-test-beta"
+          }
+        ],
+        "options": {
+          "queue": "conformance-tenant-isolation"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta.tenant_id": "tenant-beta"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-alpha"
+      },
+      "body": {
+        "queues": ["conformance-tenant-isolation"],
+        "worker_id": "test-worker-mt-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": {
+            "$size": { "$gte": 1 }
+          },
+          "$.jobs[0].meta.tenant_id": "tenant-alpha",
+          "$.jobs[0].args[0].action": "isolation-test-alpha"
+        }
+      }
+    }
+  ]
+}

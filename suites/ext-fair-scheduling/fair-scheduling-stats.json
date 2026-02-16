@@ -1,0 +1,28 @@
+{
+  "test_id": "EXT-FS-002",
+  "level": 0,
+  "category": "ext-fair-scheduling",
+  "name": "fair-scheduling-stats",
+  "description": "GET /ojs/v1/admin/scheduling/stats to retrieve scheduling metrics. Verify the response contains scheduling statistics including queue distribution information.",
+  "spec_ref": "ojs-fair-scheduling#section-5",
+  "tags": ["extension", "fair-scheduling", "stats", "admin"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "scheduling-stats",
+      "path": "/ojs/v1/admin/scheduling/stats",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.stats": {
+            "$exists": true
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "test_id": "EXT-MT-003",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-tenant-stats",
+  "description": "Enqueue a job for a specific tenant, then GET /ojs/v1/admin/tenants/{id}/stats. Verify the response includes per-tenant job statistics with at least a total count.",
+  "spec_ref": "ojs-multi-tenancy#section-6",
+  "tags": ["extension", "multi-tenancy", "admin", "stats"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-stats-test"
+      },
+      "body": {
+        "type": "test.tenant",
+        "args": [
+          {
+            "action": "tenant-stats-test"
+          }
+        ],
+        "options": {
+          "queue": "conformance-tenant-stats"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "tenant-stats",
+      "path": "/ojs/v1/admin/tenants/tenant-stats-test/stats",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.tenant_id": "tenant-stats-test",
+          "$.total_jobs": {
+            "$exists": true,
+            "$type": "number"
+          }
+        }
+      }
+    }
+  ]
+}

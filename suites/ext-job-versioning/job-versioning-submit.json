@@ -1,0 +1,57 @@
+{
+  "test_id": "EXT-VER-001",
+  "level": 0,
+  "category": "ext-job-versioning",
+  "name": "job-versioning-submit",
+  "description": "Enqueue a job with a version field in the envelope. Verify the server accepts the job and preserves the version through the enqueue and retrieval cycle.",
+  "spec_ref": "ojs-job-versioning#section-3",
+  "tags": ["extension", "job-versioning", "submit", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "email.send",
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
+        "version": 2,
+        "options": {
+          "queue": "conformance-versioning"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.version": 2
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.type": "email.send",
+          "$.job.version": 2
+        }
+      }
+    }
+  ]
+}

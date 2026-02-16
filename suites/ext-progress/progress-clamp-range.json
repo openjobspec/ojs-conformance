@@ -1,0 +1,95 @@
+{
+  "test_id": "EXT-PRG-003",
+  "level": 0,
+  "category": "ext-progress",
+  "name": "progress-clamp-range",
+  "description": "Enqueue a job, fetch it, then report a progress value above 1.0. Verify the server clamps the value to 1.0 rather than rejecting it.",
+  "spec_ref": "ojs-progress#section-3.1",
+  "tags": ["extension", "progress", "clamp", "boundary"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.progress",
+        "args": [
+          {
+            "action": "progress-clamp-test"
+          }
+        ],
+        "options": {
+          "queue": "conformance-progress-clamp"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-progress-clamp"],
+        "worker_id": "test-worker-prg-3"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "progress",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/progress",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "progress": 1.5,
+        "message": "Over 100 percent"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.progress": 1.0
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "get-progress",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/progress",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.progress": 1.0
+        }
+      }
+    }
+  ]
+}

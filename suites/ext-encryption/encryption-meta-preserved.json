@@ -1,0 +1,69 @@
+{
+  "test_id": "EXT-ENC-002",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-meta-preserved",
+  "description": "Enqueue a job with codec metadata (ojs_codec, ojs_key_id, ojs_nonce) in meta. Fetch the job and verify all codec metadata fields are preserved unchanged through the enqueue/fetch cycle.",
+  "spec_ref": "ojs-encryption#section-4",
+  "tags": ["extension", "encryption", "codec-metadata", "roundtrip"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted",
+        "args": [
+          "Y2lwaGVydGV4dC1kYXRh"
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs_codec": "chacha20-poly1305",
+          "ojs_key_id": "key-2024-002",
+          "ojs_nonce": "dW5pcXVlLW5vbmNl"
+        },
+        "options": {
+          "queue": "conformance-encryption-meta"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-encryption-meta"],
+        "worker_id": "test-worker-enc-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].args[0]": "Y2lwaGVydGV4dC1kYXRh",
+          "$.jobs[0].meta.ojs_encoded": true,
+          "$.jobs[0].meta.ojs_codec": "chacha20-poly1305",
+          "$.jobs[0].meta.ojs_key_id": "key-2024-002",
+          "$.jobs[0].meta.ojs_nonce": "dW5pcXVlLW5vbmNl"
+        }
+      }
+    }
+  ]
+}

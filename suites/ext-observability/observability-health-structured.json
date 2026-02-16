@@ -1,0 +1,34 @@
+{
+  "test_id": "EXT-OBS-002",
+  "level": 0,
+  "category": "ext-observability",
+  "name": "observability-health-structured",
+  "description": "Verify GET /ojs/v1/health returns a structured health response including server status and backend connectivity information.",
+  "spec_ref": "ojs-observability#section-5",
+  "tags": ["extension", "observability", "health", "structured"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "health",
+      "path": "/ojs/v1/health",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.status": {
+            "$in": ["ok", "healthy", "degraded"]
+          },
+          "$.backend": {
+            "$exists": true
+          },
+          "$.backend.status": {
+            "$in": ["ok", "healthy", "degraded", "unhealthy"]
+          }
+        }
+      }
+    }
+  ]
+}

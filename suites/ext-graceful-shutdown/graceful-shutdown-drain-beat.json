@@ -1,0 +1,32 @@
+{
+  "test_id": "EXT-GS-001",
+  "level": 0,
+  "category": "ext-graceful-shutdown",
+  "name": "graceful-shutdown-drain-beat",
+  "description": "Send a worker heartbeat with state=drain to signal the worker is shutting down. Verify the server acknowledges the drain state in the heartbeat response.",
+  "spec_ref": "ojs-graceful-shutdown#section-3",
+  "tags": ["extension", "graceful-shutdown", "drain", "heartbeat"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "beat",
+      "path": "/ojs/v1/workers/beat",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "worker_id": "test-worker-gs-1",
+        "state": "drain",
+        "active_jobs": 2
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.acknowledged": true
+        }
+      }
+    }
+  ]
+}

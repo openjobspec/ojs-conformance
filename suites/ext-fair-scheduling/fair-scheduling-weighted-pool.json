@@ -1,0 +1,38 @@
+{
+  "test_id": "EXT-FS-001",
+  "level": 0,
+  "category": "ext-fair-scheduling",
+  "name": "fair-scheduling-weighted-pool",
+  "description": "PUT /ojs/v1/admin/pools/{name} to create a weighted scheduling pool with queue weight assignments. Verify the server accepts the pool configuration and returns the pool details.",
+  "spec_ref": "ojs-fair-scheduling#section-3",
+  "tags": ["extension", "fair-scheduling", "pool", "admin"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "create-pool",
+      "path": "/ojs/v1/admin/pools/conformance-pool",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "name": "conformance-pool",
+        "strategy": "weighted",
+        "queues": {
+          "high-priority": { "weight": 70 },
+          "low-priority": { "weight": 30 }
+        }
+      },
+      "assertions": {
+        "status": {
+          "$in": [200, 201]
+        },
+        "body": {
+          "$.pool.name": "conformance-pool",
+          "$.pool.strategy": "weighted"
+        }
+      }
+    }
+  ]
+}

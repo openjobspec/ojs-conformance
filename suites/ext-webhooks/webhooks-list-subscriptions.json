@@ -1,0 +1,49 @@
+{
+  "test_id": "EXT-WHK-002",
+  "level": 0,
+  "category": "ext-webhooks",
+  "name": "webhooks-list-subscriptions",
+  "description": "Create a webhook subscription, then GET /ojs/v1/webhooks/subscriptions. Verify the list response includes the created subscription and returns active subscriptions.",
+  "spec_ref": "ojs-webhooks#section-4",
+  "tags": ["extension", "webhooks", "list", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "create-subscription",
+      "path": "/ojs/v1/webhooks/subscriptions",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "url": "https://example.com/webhooks/list-test",
+        "events": ["job.completed"],
+        "secret": "whk_test_secret_002"
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.subscription.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "list-subscriptions",
+      "path": "/ojs/v1/webhooks/subscriptions",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.subscriptions": {
+            "$size": { "$gte": 1 }
+          }
+        }
+      }
+    }
+  ]
+}

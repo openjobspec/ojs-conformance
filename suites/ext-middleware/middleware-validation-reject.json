@@ -1,0 +1,44 @@
+{
+  "test_id": "EXT-MW-002",
+  "level": 0,
+  "category": "ext-middleware",
+  "name": "middleware-validation-reject",
+  "description": "Enqueue a job that triggers a validation middleware rejection. Verify the server returns 422 Unprocessable Entity with an error response indicating the middleware rejected the job.",
+  "spec_ref": "ojs-middleware#section-4",
+  "tags": ["extension", "middleware", "validation", "reject"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.middleware.reject",
+        "args": [],
+        "meta": {
+          "ojs_validate": true
+        },
+        "options": {
+          "queue": "conformance-middleware-reject"
+        }
+      },
+      "assertions": {
+        "status": 422,
+        "body": {
+          "$.error.code": {
+            "$exists": true,
+            "$type": "string"
+          },
+          "$.error.message": {
+            "$exists": true,
+            "$type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "test_id": "EXT-ENC-001",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-encoded-args",
+  "description": "Enqueue a job with ojs_encoded marker indicating client-side encrypted args. Verify the server accepts the job and preserves the encoded args and codec metadata without modification.",
+  "spec_ref": "ojs-encryption#section-3",
+  "tags": ["extension", "encryption", "encoded-args", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted",
+        "args": [
+          "ZW5jcnlwdGVkLXBheWxvYWQ="
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs_codec": "aes-256-gcm",
+          "ojs_key_id": "key-2024-001"
+        },
+        "options": {
+          "queue": "conformance-encryption"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.args[0]": "ZW5jcnlwdGVkLXBheWxvYWQ=",
+          "$.job.meta.ojs_encoded": true,
+          "$.job.meta.ojs_codec": "aes-256-gcm",
+          "$.job.meta.ojs_key_id": "key-2024-001"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.args[0]": "ZW5jcnlwdGVkLXBheWxvYWQ=",
+          "$.job.meta.ojs_encoded": true,
+          "$.job.meta.ojs_codec": "aes-256-gcm"
+        }
+      }
+    }
+  ]
+}

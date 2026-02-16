@@ -1,0 +1,93 @@
+{
+  "test_id": "EXT-PRG-002",
+  "level": 0,
+  "category": "ext-progress",
+  "name": "progress-retrieve",
+  "description": "Enqueue a job, fetch it, report progress, then GET /ojs/v1/jobs/{id}/progress. Verify the server returns the current progress value and message.",
+  "spec_ref": "ojs-progress#section-4",
+  "tags": ["extension", "progress", "retrieve", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.progress",
+        "args": [
+          {
+            "action": "progress-retrieve-test"
+          }
+        ],
+        "options": {
+          "queue": "conformance-progress-retrieve"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-progress-retrieve"],
+        "worker_id": "test-worker-prg-2"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "progress",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/progress",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "progress": 0.75,
+        "message": "Three quarters done"
+      },
+      "assertions": {
+        "status": 200
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "get-progress",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/progress",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.progress": 0.75,
+          "$.message": "Three quarters done"
+        }
+      }
+    }
+  ]
+}
