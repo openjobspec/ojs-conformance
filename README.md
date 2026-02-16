@@ -1,5 +1,8 @@
 # OJS Conformance Test Suite
 
+[![CI](https://github.com/openjobspec/ojs-conformance/actions/workflows/ci.yml/badge.svg)](https://github.com/openjobspec/ojs-conformance/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 Language-agnostic conformance tests for [Open Job Spec (OJS)](https://github.com/openjobspec/spec) implementations.
 
 ## Overview
