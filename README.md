@@ -45,6 +45,7 @@ ojs-conformance/
     ext-rate-limiting/             # Extension: Rate limiting (extended)
   runner/                          # Test runner implementations
     http/                          # Go-based HTTP test runner
+    grpc/                          # Go-based gRPC test runner (scaffold)
   lib/                             # Shared library code
 ```
 
