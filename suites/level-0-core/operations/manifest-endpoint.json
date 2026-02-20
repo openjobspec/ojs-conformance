@@ -18,7 +18,7 @@
       "assertions": {
         "status": 200,
         "body": {
-          "$.specversion": "1.0.0-rc.1",
+          "$.specversion": "1.0",
           "$.implementation": { "$exists": true },
           "$.implementation.name": { "$exists": true, "$type": "string" },
           "$.conformance_level": { "$exists": true },

@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	suiteVersion = "1.0.0-rc.1"
+	suiteVersion = "1.0"
 	ojsMediaType = "application/openjobspec+json"
 )
 

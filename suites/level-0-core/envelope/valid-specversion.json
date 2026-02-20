@@ -3,7 +3,7 @@
   "level": 0,
   "category": "envelope",
   "name": "valid-specversion",
-  "description": "Enqueue a job and verify the response includes the OJS-Version header set to '1.0.0-rc.1'. The server MUST include the spec version in every response to enable version negotiation and forward compatibility.",
+  "description": "Enqueue a job and verify the response includes the OJS-Version header set to '1.0'. The server MUST include the spec version in every response to enable version negotiation and forward compatibility.",
   "spec_ref": "ojs-core#section-5.1",
   "tags": [
     "level-0",
@@ -30,7 +30,7 @@
       "assertions": {
         "status": 201,
         "headers": {
-          "OJS-Version": "1.0.0-rc.1"
+          "OJS-Version": "1.0"
         },
         "body": {
           "$.job.id": "string:uuidv7",

@@ -12,6 +12,8 @@ linters:
     - gosec
     - gocritic
     - gocyclo
+    - unparam
+    - noctx
 
 linters-settings:
   errcheck:

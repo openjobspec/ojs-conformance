@@ -31,7 +31,7 @@
         "status": 201,
         "headers": {
           "Content-Type": "application/openjobspec+json",
-          "OJS-Version": "1.0.0-rc.1"
+          "OJS-Version": "1.0"
         },
         "body": {
           "$.job.id": "string:uuidv7",

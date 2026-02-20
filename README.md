@@ -112,7 +112,7 @@ The test runner produces a conformance report:
 
 ```json
 {
-  "test_suite_version": "1.0.0-rc.1",
+  "test_suite_version": "1.0",
   "target": "http://localhost:8080",
   "run_at": "2026-02-12T10:30:00Z",
   "duration_ms": 45230,
