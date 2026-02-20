@@ -24,6 +24,20 @@ Run all tests against a local gRPC server:
 ./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites
 ```
 
+### TLS Connections
+
+Connect to a gRPC server using TLS:
+
+```bash
+./ojs-conformance-grpc-runner -url grpc.example.com:443 -suites ../../suites -tls
+```
+
+Skip TLS certificate verification (e.g., self-signed certs):
+
+```bash
+./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites -tls -insecure
+```
+
 ### Filtering
 
 Filter by conformance level:
@@ -49,13 +63,21 @@ Run a single test:
 Human-readable table (default):
 
 ```bash
-./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites -format table
+./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites -output table
 ```
 
 JSON report:
 
 ```bash
-./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites -format json
+./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites -output json
+```
+
+### Test Isolation with Redis
+
+Flush Redis between tests for full isolation:
+
+```bash
+./ojs-conformance-grpc-runner -url localhost:9090 -suites ../../suites -redis redis://localhost:6379
 ```
 
 ### Flags
@@ -67,10 +89,13 @@ JSON report:
 | `-level` | `-1` (all) | Conformance level to test (0-4) |
 | `-category` | `""` (all) | Filter by category |
 | `-test` | `""` (all) | Run a single test by ID |
-| `-format` | `table` | Output format: `table` or `json` |
+| `-output` | `table` | Output format: `table` or `json` |
 | `-verbose` | `false` | Show detailed step results |
 | `-tolerance` | `50` | Timing tolerance percentage |
 | `-timeout` | `30` | Per-RPC timeout in seconds |
+| `-tls` | `false` | Use TLS for gRPC connection |
+| `-insecure` | `false` | Skip TLS certificate verification (use with `-tls`) |
+| `-redis` | `""` | Redis URL for FLUSHDB between tests |
 
 ### Exit Codes
 
@@ -78,11 +103,20 @@ JSON report:
 - `1` - One or more tests failed
 - `2` - Configuration error (connection failure, no tests found)
 
-## How It Works
+## Architecture
 
-The runner reads the same JSON test definitions used by the HTTP runner and maps
-HTTP-style test actions to gRPC RPCs using the generated proto stubs from
-`ojs-proto`:
+### Adapter Layer (`adapter.go`)
+
+The adapter translates between the HTTP-oriented test definitions and gRPC:
+
+- **Route resolution**: Maps HTTP verb + path pairs to gRPC method names using
+  an ordered route table (exact matches before prefix matches).
+- **Status code translation**: Maps gRPC status codes to HTTP equivalents so
+  that test assertions (e.g., `"status": 201`) work unchanged.
+- **HTTP status overrides**: RPCs that correspond to HTTP 201 Created (Enqueue,
+  EnqueueBatch, RegisterCron, CreateWorkflow) override the default mapping.
+
+### Route Mapping
 
 | HTTP Action + Path | gRPC RPC |
 |---|---|
@@ -110,7 +144,30 @@ HTTP-style test actions to gRPC RPCs using the generated proto stubs from
 | `GET /ojs/manifest` | `OJSService/Manifest` |
 | `GET /ojs/v1/health` | `OJSService/Health` |
 
-gRPC status codes are mapped to HTTP status codes for assertion compatibility
-(e.g., `codes.NotFound` → `404`, `codes.InvalidArgument` → `400`).
+### gRPC ↔ HTTP Status Code Mapping
+
+| gRPC Code | HTTP Status |
+|---|---|
+| `OK` | `200` |
+| `InvalidArgument` | `400` |
+| `Unauthenticated` | `401` |
+| `PermissionDenied` | `403` |
+| `NotFound` | `404` |
+| `AlreadyExists` | `409` |
+| `FailedPrecondition` | `412` |
+| `ResourceExhausted` | `429` |
+| `Internal` | `500` |
+| `Unimplemented` | `501` |
+| `Unavailable` | `503` |
+| `DeadlineExceeded` | `504` |
+
+### File Structure
+
+| File | Purpose |
+|---|---|
+| `main.go` | CLI entry point, flag parsing, test orchestration |
+| `adapter.go` | HTTP-to-gRPC route resolution and status code translation |
+| `client.go` | gRPC client wrapper, RPC dispatch, proto ↔ JSON conversion |
+| `runner.go` | Test loading, filtering, execution, assertion evaluation, reporting |
 
 The same JSON test definitions work for both the HTTP and gRPC runners.

@@ -11,7 +11,7 @@
 //	ojs-conformance-grpc-runner -url localhost:9090 -suites ./suites -level 1
 //	ojs-conformance-grpc-runner -url localhost:9090 -suites ./suites -category retry
 //	ojs-conformance-grpc-runner -url localhost:9090 -suites ./suites -test L1-RET-001
-//	ojs-conformance-grpc-runner -url localhost:9090 -suites ./suites -format json
+//	ojs-conformance-grpc-runner -url localhost:9090 -suites ./suites -output json
 package main
 
 import (
@@ -23,9 +23,10 @@ import (
 	"time"
 
 	"github.com/openjobspec/ojs-conformance/lib"
+	"github.com/redis/go-redis/v9"
 )
 
-const suiteVersion = "1.0.0-rc.1"
+const suiteVersion = "1.0"
 
 func main() {
 	var (
@@ -38,6 +39,9 @@ func main() {
 		verbose      bool
 		tolerancePct float64
 		timeoutSec   int
+		redisURL     string
+		useTLS       bool
+		insecureConn bool
 	)
 
 	flag.StringVar(&grpcAddr, "url", "localhost:9090", "gRPC server address (host:port)")
@@ -45,17 +49,20 @@ func main() {
 	flag.IntVar(&level, "level", -1, "Filter by conformance level (0-4), -1 for all")
 	flag.StringVar(&category, "category", "", "Filter by category (e.g., envelope, retry)")
 	flag.StringVar(&testID, "test", "", "Run a single test by ID (e.g., L0-ENV-001)")
-	flag.StringVar(&outputFormat, "format", "table", "Output format: table or json")
+	flag.StringVar(&outputFormat, "output", "table", "Output format: table or json")
 	flag.BoolVar(&verbose, "verbose", false, "Show detailed step results")
 	flag.Float64Var(&tolerancePct, "tolerance", 50, "Timing tolerance percentage")
 	flag.IntVar(&timeoutSec, "timeout", 30, "Per-RPC timeout in seconds")
+	flag.StringVar(&redisURL, "redis", "", "Redis URL for FLUSHDB between tests (e.g., redis://localhost:6379)")
+	flag.BoolVar(&useTLS, "tls", false, "Use TLS for gRPC connection")
+	flag.BoolVar(&insecureConn, "insecure", false, "Skip TLS certificate verification (use with -tls)")
 	flag.Parse()
 
 	// Connect to gRPC server
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := NewOJSClient(ctx, grpcAddr)
+	client, err := NewOJSClient(ctx, grpcAddr, ConnectOptions{TLS: useTLS, Insecure: insecureConn})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to connect to gRPC server at %s: %v\n", grpcAddr, err)
 		os.Exit(2)
@@ -84,11 +91,31 @@ func main() {
 
 	rpcTimeout := time.Duration(timeoutSec) * time.Second
 
+	// Set up optional Redis client for test isolation
+	var redisClient *redis.Client
+	if redisURL != "" {
+		opts, err := redis.ParseURL(redisURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing Redis URL: %v\n", err)
+			os.Exit(2)
+		}
+		redisClient = redis.NewClient(opts)
+		if err := redisClient.Ping(context.Background()).Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error connecting to Redis: %v\n", err)
+			os.Exit(2)
+		}
+		defer redisClient.Close()
+	}
+
 	// Run tests
 	suiteStart := time.Now()
 	var results []lib.TestResult
 
 	for _, tc := range tests {
+		// Flush Redis between tests for isolation
+		if redisClient != nil {
+			redisClient.FlushDB(context.Background())
+		}
 		result := runTest(tc, client, rpcTimeout, timingCfg, verbose)
 		results = append(results, result)
 	}
