@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,9 +11,12 @@ import (
 	ojsv1 "github.com/openjobspec/ojs-proto/gen/go/ojs/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
+	grpcInsecure "google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // OJSClient wraps the generated gRPC client with convenience methods.
@@ -21,12 +25,28 @@ type OJSClient struct {
 	client ojsv1.OJSServiceClient
 }
 
+// ConnectOptions configures the gRPC dial behaviour.
+type ConnectOptions struct {
+	TLS      bool // Use TLS transport credentials.
+	Insecure bool // Skip TLS certificate verification (requires TLS=true).
+}
+
 // NewOJSClient connects to the gRPC server and returns a client wrapper.
-func NewOJSClient(ctx context.Context, addr string) (*OJSClient, error) {
-	conn, err := grpc.DialContext(ctx, addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
+func NewOJSClient(ctx context.Context, addr string, opts ConnectOptions) (*OJSClient, error) {
+	var dialOpts []grpc.DialOption
+
+	switch {
+	case opts.TLS && opts.Insecure:
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true}))) //nolint:gosec // user-requested skip
+	case opts.TLS:
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	default:
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(grpcInsecure.NewCredentials()))
+	}
+
+	dialOpts = append(dialOpts, grpc.WithBlock())
+
+	conn, err := grpc.DialContext(ctx, addr, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to %s: %w", addr, err)
 	}
@@ -46,6 +66,9 @@ type RPCResult struct {
 	GRPCCode codes.Code
 	// GRPCMessage is the gRPC error message (empty on success).
 	GRPCMessage string
+	// HTTPStatusOverride allows specific RPCs to override the HTTP status code
+	// mapping (e.g., Enqueue returns 201 Created on success, not 200 OK).
+	HTTPStatusOverride int
 }
 
 // CallRPC dispatches a test step to the appropriate gRPC RPC.
@@ -125,7 +148,7 @@ func (c *OJSClient) enqueue(ctx context.Context, body map[string]any) (*RPCResul
 		return grpcError(err), nil
 	}
 	respJSON, _ := json.Marshal(map[string]any{"job": protoJobToMap(resp.Job)})
-	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
+	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK, HTTPStatusOverride: 201}, nil
 }
 
 func (c *OJSClient) enqueueBatch(ctx context.Context, body map[string]any) (*RPCResult, error) {
@@ -164,7 +187,7 @@ func (c *OJSClient) enqueueBatch(ctx context.Context, body map[string]any) (*RPC
 		jobs = append(jobs, protoJobToMap(j))
 	}
 	respJSON, _ := json.Marshal(map[string]any{"jobs": jobs, "count": resp.Count})
-	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
+	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK, HTTPStatusOverride: 201}, nil
 }
 
 func (c *OJSClient) getJob(ctx context.Context, jobID string) (*RPCResult, error) {
@@ -172,7 +195,7 @@ func (c *OJSClient) getJob(ctx context.Context, jobID string) (*RPCResult, error
 	if err != nil {
 		return grpcError(err), nil
 	}
-	respJSON, _ := json.Marshal(protoJobToMap(resp.Job))
+	respJSON, _ := json.Marshal(map[string]any{"job": protoJobToMap(resp.Job)})
 	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
 }
 
@@ -187,7 +210,7 @@ func (c *OJSClient) cancelJob(ctx context.Context, jobID string, body map[string
 	if err != nil {
 		return grpcError(err), nil
 	}
-	respJSON, _ := json.Marshal(protoJobToMap(resp.Job))
+	respJSON, _ := json.Marshal(map[string]any{"job": protoJobToMap(resp.Job)})
 	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
 }
 
@@ -204,6 +227,9 @@ func (c *OJSClient) fetch(ctx context.Context, body map[string]any) (*RPCResult,
 		req.WorkerId = v
 	}
 	if v, ok := body["max_jobs"].(float64); ok {
+		req.Count = int32(v)
+	}
+	if v, ok := body["count"].(float64); ok {
 		req.Count = int32(v)
 	}
 
@@ -224,6 +250,13 @@ func (c *OJSClient) ack(ctx context.Context, body map[string]any) (*RPCResult, e
 	if v, ok := body["job_id"].(string); ok {
 		req.JobId = v
 	}
+	if body["result"] != nil {
+		if resultMap, ok := body["result"].(map[string]any); ok {
+			if s, err := structpb.NewStruct(resultMap); err == nil {
+				req.Result = s
+			}
+		}
+	}
 	resp, err := c.client.Ack(ctx, req)
 	if err != nil {
 		return grpcError(err), nil
@@ -243,6 +276,9 @@ func (c *OJSClient) nack(ctx context.Context, body map[string]any) (*RPCResult, 
 			req.Error.Message = v
 		}
 		if v, ok := errMap["type"].(string); ok {
+			req.Error.Code = v
+		}
+		if v, ok := errMap["code"].(string); ok {
 			req.Error.Code = v
 		}
 	}
@@ -266,8 +302,20 @@ func (c *OJSClient) heartbeat(ctx context.Context, body map[string]any) (*RPCRes
 	if v, ok := body["job_id"].(string); ok {
 		req.Id = v
 	}
+	if v, ok := body["id"].(string); ok {
+		req.Id = v
+	}
 	if v, ok := body["worker_id"].(string); ok {
 		req.WorkerId = v
+	}
+	if v, ok := body["extend_by"].(string); ok {
+		if d, err := time.ParseDuration(v); err == nil {
+			req.ExtendBy = durationpb.New(d)
+		}
+	}
+	if v, ok := body["extend_by"].(float64); ok {
+		// Interpret as seconds
+		req.ExtendBy = durationpb.New(time.Duration(v) * time.Second)
 	}
 
 	resp, err := c.client.Heartbeat(ctx, req)
@@ -405,6 +453,9 @@ func (c *OJSClient) registerCron(ctx context.Context, body map[string]any) (*RPC
 			}
 		}
 	}
+	if opts := buildEnqueueOptions(body); opts != nil {
+		req.Options = opts
+	}
 	resp, err := c.client.RegisterCron(ctx, req)
 	if err != nil {
 		return grpcError(err), nil
@@ -414,7 +465,7 @@ func (c *OJSClient) registerCron(ctx context.Context, body map[string]any) (*RPC
 		result["next_run_at"] = resp.NextRunAt.AsTime().Format(time.RFC3339Nano)
 	}
 	respJSON, _ := json.Marshal(result)
-	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
+	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK, HTTPStatusOverride: 201}, nil
 }
 
 func (c *OJSClient) unregisterCron(ctx context.Context, path string) (*RPCResult, error) {
@@ -481,6 +532,9 @@ func (c *OJSClient) createWorkflow(ctx context.Context, body map[string]any) (*R
 						}
 					}
 				}
+				if opts := buildEnqueueOptions(sm); opts != nil {
+					step.Options = opts
+				}
 				req.Steps = append(req.Steps, step)
 			}
 		}
@@ -491,7 +545,7 @@ func (c *OJSClient) createWorkflow(ctx context.Context, body map[string]any) (*R
 		return grpcError(err), nil
 	}
 	respJSON, _ := json.Marshal(map[string]any{"workflow": protoWorkflowToMap(resp.Workflow)})
-	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
+	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK, HTTPStatusOverride: 201}, nil
 }
 
 func (c *OJSClient) getWorkflow(ctx context.Context, path string) (*RPCResult, error) {
@@ -520,7 +574,11 @@ func (c *OJSClient) health(ctx context.Context) (*RPCResult, error) {
 		return grpcError(err), nil
 	}
 	statusStr := strings.ToLower(strings.TrimPrefix(resp.Status.String(), "HEALTH_STATUS_"))
-	respJSON, _ := json.Marshal(map[string]any{"status": statusStr})
+	result := map[string]any{"status": statusStr}
+	if resp.Timestamp != nil {
+		result["timestamp"] = resp.Timestamp.AsTime().Format(time.RFC3339Nano)
+	}
+	respJSON, _ := json.Marshal(result)
 	return &RPCResult{ResponseJSON: respJSON, GRPCCode: codes.OK}, nil
 }
 
@@ -529,11 +587,16 @@ func (c *OJSClient) manifest(ctx context.Context) (*RPCResult, error) {
 	if err != nil {
 		return grpcError(err), nil
 	}
+	// Map proto field names to the HTTP JSON format that the tests expect.
+	// The tests assert on $.specversion (HTTP JSON format), while the proto
+	// uses ojs_version. We output both for maximum compatibility.
 	result := map[string]any{
+		"specversion":       resp.OjsVersion,
 		"ojs_version":       resp.OjsVersion,
 		"conformance_level": resp.ConformanceLevel,
 		"protocols":         resp.Protocols,
 		"backend":           resp.Backend,
+		"schema_validation":  resp.SchemaValidation,
 	}
 	if resp.Implementation != nil {
 		result["implementation"] = map[string]any{
@@ -571,72 +634,15 @@ func grpcError(err error) *RPCResult {
 }
 
 // grpcCodeToHTTPStatus maps gRPC status codes to HTTP equivalents for assertion compatibility.
+// Delegates to the adapter layer.
 func grpcCodeToHTTPStatus(code codes.Code) int {
-	switch code {
-	case codes.OK:
-		return 200
-	case codes.InvalidArgument:
-		return 400
-	case codes.NotFound:
-		return 404
-	case codes.AlreadyExists:
-		return 409
-	case codes.FailedPrecondition:
-		return 412
-	case codes.ResourceExhausted:
-		return 429
-	case codes.Internal:
-		return 500
-	case codes.Unimplemented:
-		return 501
-	case codes.Unavailable:
-		return 503
-	default:
-		return 500
-	}
+	return GRPCCodeToHTTPStatus(code)
 }
 
 // resolveMethod determines the gRPC method name from an HTTP action and path.
+// Delegates to the adapter layer.
 func resolveMethod(action, path string) string {
-	// Exact matches first
-	key := action + " " + path
-	if m, ok := actionToRPC[key]; ok {
-		return m
-	}
-	// Prefix matching for paths with IDs
-	for pattern, method := range actionToRPC {
-		parts := strings.SplitN(pattern, " ", 2)
-		if len(parts) == 2 && parts[0] == action && strings.HasPrefix(path, parts[1]) {
-			return method
-		}
-	}
-	return ""
-}
-
-// actionToRPC maps HTTP action+path patterns to gRPC method names.
-var actionToRPC = map[string]string{
-	"POST /ojs/v1/jobs":              "Enqueue",
-	"POST /ojs/v1/jobs/batch":        "EnqueueBatch",
-	"GET /ojs/v1/jobs/":              "GetJob",
-	"DELETE /ojs/v1/jobs/":           "CancelJob",
-	"POST /ojs/v1/workers/fetch":     "Fetch",
-	"POST /ojs/v1/workers/ack":       "Ack",
-	"POST /ojs/v1/workers/nack":      "Nack",
-	"POST /ojs/v1/workers/heartbeat": "Heartbeat",
-	"GET /ojs/v1/queues":             "ListQueues",
-	"GET /ojs/v1/queues/":            "QueueStats",
-	"POST /ojs/v1/queues/":           "PauseOrResumeQueue",
-	"GET /ojs/v1/dead-letter":        "ListDeadLetter",
-	"POST /ojs/v1/dead-letter/":      "RetryDeadLetter",
-	"DELETE /ojs/v1/dead-letter/":    "DeleteDeadLetter",
-	"GET /ojs/v1/cron":               "ListCron",
-	"POST /ojs/v1/cron":              "RegisterCron",
-	"DELETE /ojs/v1/cron/":           "UnregisterCron",
-	"POST /ojs/v1/workflows":         "CreateWorkflow",
-	"GET /ojs/v1/workflows/":         "GetWorkflow",
-	"DELETE /ojs/v1/workflows/":      "CancelWorkflow",
-	"GET /ojs/manifest":              "Manifest",
-	"GET /ojs/v1/health":             "Health",
+	return ResolveRoute(action, path)
 }
 
 // extractIDFromPath extracts an ID segment from a URL path after a prefix.
@@ -650,29 +656,201 @@ func extractIDFromPath(path, prefix string) string {
 }
 
 // buildEnqueueOptions constructs EnqueueOptions from a JSON body.
+// It checks both top-level keys and keys nested under an "options" object,
+// since the test JSON format nests options under body.options while the
+// proto expects them flattened into EnqueueOptions.
 func buildEnqueueOptions(body map[string]any) *ojsv1.EnqueueOptions {
 	opts := &ojsv1.EnqueueOptions{}
 	hasOpts := false
 
-	if v, ok := body["queue"].(string); ok {
+	// First check for a nested "options" object (HTTP JSON test format)
+	src := body
+	hasNestedOptions := false
+	if optsMap, ok := body["options"].(map[string]any); ok {
+		src = optsMap
+		hasNestedOptions = true
+	}
+
+	if v, ok := src["queue"].(string); ok {
 		opts.Queue = v
 		hasOpts = true
 	}
-	if v, ok := body["priority"].(float64); ok {
+	if v, ok := src["priority"].(float64); ok {
 		opts.Priority = int32(v)
 		hasOpts = true
 	}
-	if v, ok := body["max_attempts"].(float64); ok {
+	if v, ok := src["max_attempts"].(float64); ok {
 		opts.MaxAttempts = int32(v)
 		hasOpts = true
 	}
-	if tags, ok := body["tags"].([]any); ok {
+	if tags, ok := src["tags"].([]any); ok {
 		for _, t := range tags {
 			if s, ok := t.(string); ok {
 				opts.Tags = append(opts.Tags, s)
 			}
 		}
 		hasOpts = true
+	}
+	if v, ok := src["trace_id"].(string); ok {
+		opts.TraceId = v
+		hasOpts = true
+	}
+
+	// Handle scheduled_at / delay_until
+	if v, ok := src["scheduled_at"].(string); ok {
+		if t, err := time.Parse(time.RFC3339Nano, v); err == nil {
+			opts.DelayUntil = timestamppb.New(t)
+			hasOpts = true
+		}
+	}
+
+	// Handle timeout (as seconds or duration string)
+	if v, ok := src["timeout"].(float64); ok {
+		opts.Timeout = durationpb.New(time.Duration(v) * time.Second)
+		hasOpts = true
+	}
+	if v, ok := src["timeout"].(string); ok {
+		if d, err := time.ParseDuration(v); err == nil {
+			opts.Timeout = durationpb.New(d)
+			hasOpts = true
+		}
+	}
+
+	// Handle TTL (as seconds or duration string)
+	if v, ok := src["ttl"].(float64); ok {
+		opts.Ttl = durationpb.New(time.Duration(v) * time.Second)
+		hasOpts = true
+	}
+	if v, ok := src["ttl"].(string); ok {
+		if d, err := time.ParseDuration(v); err == nil {
+			opts.Ttl = durationpb.New(d)
+			hasOpts = true
+		}
+	}
+
+	// Handle retry policy
+	if retryMap, ok := src["retry"].(map[string]any); ok {
+		retry := &ojsv1.RetryPolicy{}
+		hasRetry := false
+		if v, ok := retryMap["max_attempts"].(float64); ok {
+			retry.MaxAttempts = int32(v)
+			hasRetry = true
+		}
+		if v, ok := retryMap["initial_interval"].(float64); ok {
+			retry.InitialInterval = durationpb.New(time.Duration(v) * time.Second)
+			hasRetry = true
+		}
+		if v, ok := retryMap["initial_delay"].(float64); ok {
+			retry.InitialInterval = durationpb.New(time.Duration(v) * time.Second)
+			hasRetry = true
+		}
+		if v, ok := retryMap["initial_interval"].(string); ok {
+			if d, err := time.ParseDuration(v); err == nil {
+				retry.InitialInterval = durationpb.New(d)
+				hasRetry = true
+			}
+		}
+		if v, ok := retryMap["max_interval"].(float64); ok {
+			retry.MaxInterval = durationpb.New(time.Duration(v) * time.Second)
+			hasRetry = true
+		}
+		if v, ok := retryMap["max_delay"].(float64); ok {
+			retry.MaxInterval = durationpb.New(time.Duration(v) * time.Second)
+			hasRetry = true
+		}
+		if v, ok := retryMap["multiplier"].(float64); ok {
+			retry.BackoffCoefficient = v
+			hasRetry = true
+		}
+		if v, ok := retryMap["backoff_coefficient"].(float64); ok {
+			retry.BackoffCoefficient = v
+			hasRetry = true
+		}
+		if hasRetry {
+			opts.Retry = retry
+			hasOpts = true
+		}
+	}
+
+	// Handle unique policy
+	if uniqueMap, ok := src["unique"].(map[string]any); ok {
+		unique := &ojsv1.UniquePolicy{}
+		hasUnique := false
+		if v, ok := uniqueMap["key"].(string); ok {
+			unique.Key = []string{v}
+			hasUnique = true
+		}
+		if keys, ok := uniqueMap["key"].([]any); ok {
+			for _, k := range keys {
+				if s, ok := k.(string); ok {
+					unique.Key = append(unique.Key, s)
+				}
+			}
+			hasUnique = true
+		}
+		if v, ok := uniqueMap["period"].(float64); ok {
+			unique.Period = durationpb.New(time.Duration(v) * time.Second)
+			hasUnique = true
+		}
+		if v, ok := uniqueMap["period"].(string); ok {
+			if d, err := time.ParseDuration(v); err == nil {
+				unique.Period = durationpb.New(d)
+				hasUnique = true
+			}
+		}
+		if v, ok := uniqueMap["on_conflict"].(string); ok {
+			switch strings.ToLower(v) {
+			case "reject":
+				unique.OnConflict = ojsv1.UniqueConflictAction_UNIQUE_CONFLICT_ACTION_REJECT
+			case "replace":
+				unique.OnConflict = ojsv1.UniqueConflictAction_UNIQUE_CONFLICT_ACTION_REPLACE
+			case "ignore":
+				unique.OnConflict = ojsv1.UniqueConflictAction_UNIQUE_CONFLICT_ACTION_IGNORE
+			case "replace_except_schedule":
+				unique.OnConflict = ojsv1.UniqueConflictAction_UNIQUE_CONFLICT_ACTION_REPLACE_EXCEPT_SCHEDULE
+			}
+			hasUnique = true
+		}
+		if states, ok := uniqueMap["states"].([]any); ok {
+			for _, s := range states {
+				if ss, ok := s.(string); ok {
+					stateVal, exists := ojsv1.JobState_value["JOB_STATE_"+strings.ToUpper(ss)]
+					if exists {
+						unique.States = append(unique.States, ojsv1.JobState(stateVal))
+					}
+				}
+			}
+			hasUnique = true
+		}
+		if hasUnique {
+			opts.Unique = unique
+			hasOpts = true
+		}
+	}
+
+	// Handle meta (extensible metadata)
+	if metaMap, ok := src["meta"].(map[string]any); ok {
+		if s, err := structpb.NewStruct(metaMap); err == nil {
+			opts.Meta = s
+			hasOpts = true
+		}
+	}
+
+	// If we used a nested "options" object, also check top-level body keys
+	// as fallbacks (e.g., the batch request has default_options at top level)
+	if hasNestedOptions {
+		if v, ok := body["queue"].(string); ok && opts.Queue == "" {
+			opts.Queue = v
+			hasOpts = true
+		}
+		if v, ok := body["priority"].(float64); ok && opts.Priority == 0 {
+			opts.Priority = int32(v)
+			hasOpts = true
+		}
+		if v, ok := body["max_attempts"].(float64); ok && opts.MaxAttempts == 0 {
+			opts.MaxAttempts = int32(v)
+			hasOpts = true
+		}
 	}
 
 	if !hasOpts {
@@ -682,6 +860,7 @@ func buildEnqueueOptions(body map[string]any) *ojsv1.EnqueueOptions {
 }
 
 // protoJobToMap converts a protobuf Job message to a map for JSON serialization.
+// The map uses the HTTP JSON field names that the test assertions expect.
 func protoJobToMap(j *ojsv1.Job) map[string]any {
 	if j == nil {
 		return nil
@@ -749,6 +928,45 @@ func protoJobToMap(j *ojsv1.Job) map[string]any {
 	}
 	if j.WorkflowId != "" {
 		m["workflow_id"] = j.WorkflowId
+	}
+	if j.Result != nil {
+		m["result"] = j.Result.AsMap()
+	}
+	if j.Meta != nil {
+		m["meta"] = j.Meta.AsMap()
+	}
+	if j.RetryPolicy != nil {
+		retry := map[string]any{}
+		if j.RetryPolicy.MaxAttempts != 0 {
+			retry["max_attempts"] = j.RetryPolicy.MaxAttempts
+		}
+		if j.RetryPolicy.InitialInterval != nil {
+			retry["initial_interval"] = j.RetryPolicy.InitialInterval.AsDuration().Seconds()
+		}
+		if j.RetryPolicy.MaxInterval != nil {
+			retry["max_interval"] = j.RetryPolicy.MaxInterval.AsDuration().Seconds()
+		}
+		if j.RetryPolicy.BackoffCoefficient != 0 {
+			retry["backoff_coefficient"] = j.RetryPolicy.BackoffCoefficient
+		}
+		if len(retry) > 0 {
+			m["retry_policy"] = retry
+		}
+	}
+	if j.UniquePolicy != nil {
+		unique := map[string]any{}
+		if len(j.UniquePolicy.Key) > 0 {
+			unique["key"] = j.UniquePolicy.Key
+		}
+		if j.UniquePolicy.Period != nil {
+			unique["period"] = j.UniquePolicy.Period.AsDuration().Seconds()
+		}
+		if j.UniquePolicy.OnConflict != ojsv1.UniqueConflictAction_UNIQUE_CONFLICT_ACTION_UNSPECIFIED {
+			unique["on_conflict"] = strings.ToLower(strings.TrimPrefix(j.UniquePolicy.OnConflict.String(), "UNIQUE_CONFLICT_ACTION_"))
+		}
+		if len(unique) > 0 {
+			m["unique_policy"] = unique
+		}
 	}
 	return m
 }
