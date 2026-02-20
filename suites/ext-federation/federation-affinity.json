@@ -1,0 +1,50 @@
+{
+  "name": "federation-affinity",
+  "level": 4,
+  "description": "Enqueue a geo-pinned job with regional affinity constraints and verify region metadata is preserved",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "user.data.export",
+        "args": ["usr_12345"],
+        "queue": "gdpr-exports",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-9d5e-7f01-ac34-cdef12345678",
+          "ojs.federation.region": "eu-west-1",
+          "ojs.federation.region_affinity": "geo-pin",
+          "ojs.federation.source_region": "us-east-1"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "user.data.export",
+          "queue": "gdpr-exports",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "type": "user.data.export",
+          "meta": {
+            "ojs.federation.federation_id": "01912e4a-9d5e-7f01-ac34-cdef12345678",
+            "ojs.federation.region": "eu-west-1",
+            "ojs.federation.region_affinity": "geo-pin",
+            "ojs.federation.source_region": "us-east-1"
+          }
+        }
+      }
+    }
+  ]
+}

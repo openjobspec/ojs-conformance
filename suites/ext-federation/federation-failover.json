@@ -1,0 +1,48 @@
+{
+  "name": "federation-failover",
+  "level": 4,
+  "description": "Enqueue a job with overflow routing for region failover scenarios and verify metadata persistence",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "video.transcode",
+        "args": ["/input/video.mp4", "1080p"],
+        "queue": "transcode",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-8c4d-7ef0-9b23-bcdef1234567",
+          "ojs.federation.region_affinity": "overflow",
+          "ojs.federation.source_region": "us-east-1",
+          "ojs.federation.routed_at": "2026-03-15T10:30:00.123Z"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "video.transcode",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "ojs.federation.federation_id": "01912e4a-8c4d-7ef0-9b23-bcdef1234567",
+            "ojs.federation.region_affinity": "overflow",
+            "ojs.federation.source_region": "us-east-1",
+            "ojs.federation.routed_at": "2026-03-15T10:30:00.123Z"
+          }
+        }
+      }
+    }
+  ]
+}

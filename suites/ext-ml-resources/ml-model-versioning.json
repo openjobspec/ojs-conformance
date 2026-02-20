@@ -1,0 +1,50 @@
+{
+  "name": "ml-model-versioning",
+  "level": 4,
+  "description": "Enqueue a job with model versioning metadata including provider, format, and checksum",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "ml.inference",
+        "args": [{"prompt": "Classify this text"}],
+        "queue": "inference",
+        "ext_ml_accelerator": "gpu",
+        "ext_ml_gpu_type": "nvidia-l4",
+        "ext_ml_gpu_count": 1,
+        "ext_ml_model_id": "customer-intent-classifier",
+        "ext_ml_model_version": "3.1.0",
+        "ext_ml_model_provider": "huggingface",
+        "ext_ml_model_format": "onnx",
+        "ext_ml_model_checksum": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "ml.inference",
+          "queue": "inference",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "ext_ml_model_id": "customer-intent-classifier",
+          "ext_ml_model_version": "3.1.0",
+          "ext_ml_model_provider": "huggingface",
+          "ext_ml_model_format": "onnx",
+          "ext_ml_model_checksum": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      }
+    }
+  ]
+}

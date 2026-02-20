@@ -1,0 +1,43 @@
+{
+  "name": "ml-compute-constraints",
+  "level": 4,
+  "description": "Verify ML compute constraints are stored and returned",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "ml.generate",
+        "args": [{"prompt": "Generate text"}],
+        "queue": "default",
+        "ext_ml_max_tokens": 4096,
+        "ext_ml_max_batch_size": 32,
+        "ext_ml_timeout_seconds": 300,
+        "ext_ml_priority_class": "spot"
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "ext_ml_max_tokens": 4096,
+          "ext_ml_max_batch_size": 32,
+          "ext_ml_timeout_seconds": 300,
+          "ext_ml_priority_class": "spot"
+        }
+      }
+    }
+  ]
+}

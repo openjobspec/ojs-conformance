@@ -1,0 +1,83 @@
+{
+  "name": "ml-gpu-affinity",
+  "level": 4,
+  "description": "Enqueue a job with GPU requirements and node affinity rules",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "ml.train",
+        "args": [{"task": "fine-tune-model"}],
+        "queue": "gpu-training",
+        "ext_ml_accelerator": "gpu",
+        "ext_ml_gpu_type": "nvidia-a100",
+        "ext_ml_gpu_count": 4,
+        "ext_ml_gpu_memory_gb": 80,
+        "ext_ml_gpu_interconnect": "nvlink",
+        "ext_ml_distributed_strategy": "fsdp",
+        "ext_ml_node_affinity": {
+          "required": [
+            {
+              "key": "gpu.nvidia.com/class",
+              "operator": "In",
+              "values": ["A100", "H100"]
+            }
+          ],
+          "preferred": [
+            {
+              "key": "topology.kubernetes.io/zone",
+              "operator": "In",
+              "values": ["us-east-1a"],
+              "weight": 80
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "ml.train",
+          "queue": "gpu-training",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "ext_ml_accelerator": "gpu",
+          "ext_ml_gpu_type": "nvidia-a100",
+          "ext_ml_gpu_count": 4,
+          "ext_ml_gpu_memory_gb": 80,
+          "ext_ml_gpu_interconnect": "nvlink",
+          "ext_ml_distributed_strategy": "fsdp",
+          "ext_ml_node_affinity": {
+            "required": [
+              {
+                "key": "gpu.nvidia.com/class",
+                "operator": "In",
+                "values": ["A100", "H100"]
+              }
+            ],
+            "preferred": [
+              {
+                "key": "topology.kubernetes.io/zone",
+                "operator": "In",
+                "values": ["us-east-1a"],
+                "weight": 80
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

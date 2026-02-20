@@ -1,0 +1,73 @@
+{
+  "name": "ml-resource-constraints",
+  "level": 4,
+  "description": "Verify ML resource constraints including memory, storage, CPU, and checkpointing are stored and returned",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "ml.train",
+        "args": [{"task": "distributed-training"}],
+        "queue": "gpu-training",
+        "ext_ml_accelerator": "gpu",
+        "ext_ml_gpu_type": "nvidia-h100",
+        "ext_ml_gpu_count": 8,
+        "ext_ml_gpu_memory_gb": 80,
+        "ext_ml_memory_gb": 512,
+        "ext_ml_storage_gb": 2000,
+        "ext_ml_shm_size_gb": 128,
+        "ext_ml_cpu_cores": 64,
+        "ext_ml_runtime": "pytorch",
+        "ext_ml_precision": "bf16",
+        "ext_ml_distributed_strategy": "fsdp",
+        "ext_ml_checkpoint_enabled": true,
+        "ext_ml_checkpoint_interval_s": 300,
+        "ext_ml_checkpoint_storage_uri": "s3://checkpoints/run-001/",
+        "ext_ml_checkpoint_max_count": 3,
+        "ext_ml_priority_class": "on-demand",
+        "ext_ml_preemption_grace_period_s": 120,
+        "ext_ml_timeout_seconds": 172800
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "ml.train",
+          "queue": "gpu-training",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "ext_ml_accelerator": "gpu",
+          "ext_ml_gpu_type": "nvidia-h100",
+          "ext_ml_gpu_count": 8,
+          "ext_ml_gpu_memory_gb": 80,
+          "ext_ml_memory_gb": 512,
+          "ext_ml_storage_gb": 2000,
+          "ext_ml_shm_size_gb": 128,
+          "ext_ml_cpu_cores": 64,
+          "ext_ml_runtime": "pytorch",
+          "ext_ml_precision": "bf16",
+          "ext_ml_distributed_strategy": "fsdp",
+          "ext_ml_checkpoint_enabled": true,
+          "ext_ml_checkpoint_interval_s": 300,
+          "ext_ml_checkpoint_storage_uri": "s3://checkpoints/run-001/",
+          "ext_ml_checkpoint_max_count": 3,
+          "ext_ml_priority_class": "on-demand",
+          "ext_ml_preemption_grace_period_s": 120,
+          "ext_ml_timeout_seconds": 172800
+        }
+      }
+    }
+  ]
+}

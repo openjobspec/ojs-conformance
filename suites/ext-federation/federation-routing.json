@@ -1,0 +1,48 @@
+{
+  "name": "federation-routing",
+  "level": 4,
+  "description": "Enqueue a job with federation routing metadata and verify cross-region attributes are stored",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "email.send",
+        "args": ["user@example.com", "welcome"],
+        "queue": "email",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-7b3c-7def-8a12-abcdef123456",
+          "ojs.federation.region_affinity": "affinity",
+          "ojs.federation.source_region": "us-east-1"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "email.send",
+          "queue": "email",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "type": "email.send",
+          "meta": {
+            "ojs.federation.federation_id": "01912e4a-7b3c-7def-8a12-abcdef123456",
+            "ojs.federation.region_affinity": "affinity",
+            "ojs.federation.source_region": "us-east-1"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "push-ml-job-with-resources",
+  "level": 4,
+  "description": "Enqueue a job with ML resource requirements",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "ml.inference",
+        "args": [{"prompt": "Hello"}],
+        "queue": "gpu-workers",
+        "ext_ml_accelerator": "gpu",
+        "ext_ml_gpu_type": "a100",
+        "ext_ml_gpu_count": 1,
+        "ext_ml_model_id": "test-model",
+        "ext_ml_model_version": "v1.0"
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "ml.inference",
+          "queue": "gpu-workers",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "ext_ml_accelerator": "gpu",
+          "ext_ml_gpu_type": "a100",
+          "ext_ml_gpu_count": 1,
+          "ext_ml_model_id": "test-model",
+          "ext_ml_model_version": "v1.0"
+        }
+      }
+    }
+  ]
+}
