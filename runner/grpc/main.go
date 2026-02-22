@@ -147,4 +147,3 @@ func outputJSON(report lib.SuiteReport) {
 	enc.SetIndent("", "  ")
 	enc.Encode(report)
 }
-
