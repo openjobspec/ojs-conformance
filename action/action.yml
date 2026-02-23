@@ -1,0 +1,163 @@
+name: 'OJS Conformance Test'
+description: 'Run Open Job Spec conformance tests against any OJS-compliant server'
+author: 'OpenJobSpec'
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  server-url:
+    description: 'Base URL of the OJS server to test (e.g., http://localhost:8080)'
+    required: true
+  level:
+    description: 'Conformance level to test (0-4, or "all" for all levels)'
+    required: false
+    default: 'all'
+  category:
+    description: 'Filter by test category (e.g., envelope, retry, workflow)'
+    required: false
+    default: ''
+  test-id:
+    description: 'Run a single test by ID (e.g., L0-ENV-001)'
+    required: false
+    default: ''
+  output:
+    description: 'Output format: table or json'
+    required: false
+    default: 'table'
+  redis-url:
+    description: 'Redis URL for FLUSHDB between tests (required for Redis backends)'
+    required: false
+    default: ''
+  tolerance:
+    description: 'Timing tolerance percentage for timing-sensitive tests'
+    required: false
+    default: '50'
+  timeout:
+    description: 'HTTP request timeout in seconds'
+    required: false
+    default: '30'
+  verbose:
+    description: 'Show detailed step-by-step results'
+    required: false
+    default: 'false'
+
+outputs:
+  passed:
+    description: 'Number of tests passed'
+  failed:
+    description: 'Number of tests failed'
+  skipped:
+    description: 'Number of tests skipped'
+  total:
+    description: 'Total number of tests run'
+  result:
+    description: 'Overall result: PASS or FAIL'
+  json-report:
+    description: 'Full test results as JSON (when output=json)'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+      with:
+        go-version: '1.24'
+
+    - name: Build conformance runner
+      shell: bash
+      working-directory: ${{ github.action_path }}/..
+      run: |
+        cd runner/http
+        go build -o "$RUNNER_TEMP/ojs-conformance-runner" .
+
+    - name: Run conformance tests
+      id: run-tests
+      shell: bash
+      working-directory: ${{ github.action_path }}/..
+      run: |
+        ARGS="-url ${{ inputs.server-url }} -suites ./suites"
+
+        if [ "${{ inputs.level }}" != "all" ]; then
+          ARGS="$ARGS -level ${{ inputs.level }}"
+        fi
+
+        if [ -n "${{ inputs.category }}" ]; then
+          ARGS="$ARGS -category ${{ inputs.category }}"
+        fi
+
+        if [ -n "${{ inputs.test-id }}" ]; then
+          ARGS="$ARGS -test ${{ inputs.test-id }}"
+        fi
+
+        if [ -n "${{ inputs.redis-url }}" ]; then
+          ARGS="$ARGS -redis ${{ inputs.redis-url }}"
+        fi
+
+        ARGS="$ARGS -tolerance ${{ inputs.tolerance }}"
+        ARGS="$ARGS -timeout ${{ inputs.timeout }}"
+
+        if [ "${{ inputs.verbose }}" = "true" ]; then
+          ARGS="$ARGS -verbose"
+        fi
+
+        # Always generate JSON for output parsing
+        "$RUNNER_TEMP/ojs-conformance-runner" $ARGS -output json > "$RUNNER_TEMP/conformance-results.json" 2>&1 || true
+
+        # Parse results
+        PASSED=$(jq -r '.summary.passed // 0' "$RUNNER_TEMP/conformance-results.json" 2>/dev/null || echo "0")
+        FAILED=$(jq -r '.summary.failed // 0' "$RUNNER_TEMP/conformance-results.json" 2>/dev/null || echo "0")
+        SKIPPED=$(jq -r '.summary.skipped // 0' "$RUNNER_TEMP/conformance-results.json" 2>/dev/null || echo "0")
+        TOTAL=$(jq -r '.summary.total // 0' "$RUNNER_TEMP/conformance-results.json" 2>/dev/null || echo "0")
+
+        echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+        echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+        echo "skipped=$SKIPPED" >> "$GITHUB_OUTPUT"
+        echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+        echo "json-report=$(cat "$RUNNER_TEMP/conformance-results.json")" >> "$GITHUB_OUTPUT"
+
+        if [ "$FAILED" -gt 0 ]; then
+          echo "result=FAIL" >> "$GITHUB_OUTPUT"
+        else
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+        fi
+
+        # Display human-readable output
+        if [ "${{ inputs.output }}" = "table" ]; then
+          "$RUNNER_TEMP/ojs-conformance-runner" $ARGS -output table || true
+        else
+          cat "$RUNNER_TEMP/conformance-results.json"
+        fi
+
+    - name: Generate summary
+      if: always()
+      shell: bash
+      run: |
+        RESULT="${{ steps.run-tests.outputs.result }}"
+        PASSED="${{ steps.run-tests.outputs.passed }}"
+        FAILED="${{ steps.run-tests.outputs.failed }}"
+        TOTAL="${{ steps.run-tests.outputs.total }}"
+
+        if [ "$RESULT" = "PASS" ]; then
+          ICON="✅"
+        else
+          ICON="❌"
+        fi
+
+        echo "## ${ICON} OJS Conformance Results" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+        echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Server | \`${{ inputs.server-url }}\` |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Passed | ${PASSED} |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Failed | ${FAILED} |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Total | ${TOTAL} |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Result | **${RESULT}** |" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Fail if tests failed
+      if: steps.run-tests.outputs.result == 'FAIL'
+      shell: bash
+      run: |
+        echo "::error::OJS conformance tests failed (${{ steps.run-tests.outputs.failed }}/${{ steps.run-tests.outputs.total }} tests failed)"
+        exit 1

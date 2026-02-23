@@ -1,0 +1,46 @@
+# Example: Run OJS conformance tests in your CI pipeline.
+# Copy this file to .github/workflows/ojs-conformance.yml in your repository.
+
+name: OJS Conformance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Start your OJS backend
+        run: |
+          # Replace with your server start command
+          docker run -d --network host \
+            -e REDIS_URL=redis://localhost:6379 \
+            -e OJS_ALLOW_INSECURE_NO_AUTH=true \
+            your-ojs-backend:latest
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/ojs/v1/health && break || sleep 1
+          done
+
+      - name: Run OJS conformance tests
+        uses: openjobspec/ojs-conformance/action@main
+        with:
+          server-url: http://localhost:8080
+          redis-url: redis://localhost:6379
+          level: all
+          verbose: true
