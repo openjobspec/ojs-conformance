@@ -20,3 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rich assertion library (`lib/`) with JSONPath, regex, range, and type matchers
 - 145 JSON test definition files
 - README with structure overview and usage instructions
+
