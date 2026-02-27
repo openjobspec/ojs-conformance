@@ -1,0 +1,145 @@
+# Reusable OJS Conformance Test Workflow
+#
+# Third-party OJS implementations can call this workflow to validate
+# their conformance level. Usage:
+#
+#   jobs:
+#     conformance:
+#       uses: openjobspec/ojs-conformance/.github/workflows/conformance.yml@main
+#       with:
+#         server-command: 'make run'
+#         server-url: 'http://localhost:8080'
+#         level: 'all'
+#
+# This workflow:
+#   1. Starts your server using the provided command
+#   2. Waits for it to become healthy
+#   3. Runs the conformance test suite
+#   4. Generates a badge and summary
+
+name: OJS Conformance
+
+on:
+  workflow_call:
+    inputs:
+      server-command:
+        description: 'Command to start the OJS server'
+        required: true
+        type: string
+      server-url:
+        description: 'Base URL of the OJS server'
+        required: false
+        type: string
+        default: 'http://localhost:8080'
+      level:
+        description: 'Conformance level (0-4 or "all")'
+        required: false
+        type: string
+        default: 'all'
+      setup-command:
+        description: 'Optional setup command (e.g., docker compose up -d)'
+        required: false
+        type: string
+        default: ''
+      teardown-command:
+        description: 'Optional teardown command (e.g., docker compose down)'
+        required: false
+        type: string
+        default: ''
+      health-timeout:
+        description: 'Max seconds to wait for server health check'
+        required: false
+        type: number
+        default: 60
+      go-version:
+        description: 'Go version to use'
+        required: false
+        type: string
+        default: '1.24'
+    outputs:
+      result:
+        description: 'PASS or FAIL'
+        value: ${{ jobs.test.outputs.result }}
+      passed:
+        description: 'Number of tests passed'
+        value: ${{ jobs.test.outputs.passed }}
+      failed:
+        description: 'Number of tests failed'
+        value: ${{ jobs.test.outputs.failed }}
+      total:
+        description: 'Total tests run'
+        value: ${{ jobs.test.outputs.total }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.conformance.outputs.result }}
+      passed: ${{ steps.conformance.outputs.passed }}
+      failed: ${{ steps.conformance.outputs.failed }}
+      total: ${{ steps.conformance.outputs.total }}
+
+    steps:
+      - name: Checkout conformance suite
+        uses: actions/checkout@v4
+        with:
+          repository: openjobspec/ojs-conformance
+          path: conformance
+
+      - name: Checkout implementation
+        uses: actions/checkout@v4
+        with:
+          path: implementation
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Run setup
+        if: inputs.setup-command != ''
+        working-directory: implementation
+        run: ${{ inputs.setup-command }}
+
+      - name: Start server
+        working-directory: implementation
+        run: |
+          ${{ inputs.server-command }} &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for health
+        run: |
+          echo "Waiting for server at ${{ inputs.server-url }}..."
+          TIMEOUT=${{ inputs.health-timeout }}
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            if curl -sf "${{ inputs.server-url }}/ojs/v1/health" > /dev/null 2>&1; then
+              echo "Server is healthy after ${ELAPSED}s"
+              exit 0
+            fi
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+          done
+          echo "::error::Server did not become healthy within ${TIMEOUT}s"
+          exit 1
+
+      - name: Run conformance tests
+        id: conformance
+        uses: ./conformance/action
+        with:
+          server-url: ${{ inputs.server-url }}
+          level: ${{ inputs.level }}
+          output: table
+          verbose: 'true'
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID 2>/dev/null || true
+          fi
+
+      - name: Run teardown
+        if: always() && inputs.teardown-command != ''
+        working-directory: implementation
+        run: ${{ inputs.teardown-command }}

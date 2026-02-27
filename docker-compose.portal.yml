@@ -1,0 +1,25 @@
+# Conformance Certification Portal
+#
+# Start the portal:
+#   docker compose -f docker-compose.portal.yml up
+#
+# Access at:
+#   Portal API:  http://localhost:8090/api/certificates
+#   Badge:       http://localhost:8090/badge/L0-L4.svg?name=MyBackend&status=pass
+#   Health:      http://localhost:8090/healthz
+
+services:
+  portal:
+    build:
+      context: .
+      dockerfile: Dockerfile.portal
+    ports:
+      - "8090:8090"
+    environment:
+      PORTAL_ADDR: ":8090"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
