@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/openjobspec/ojs-conformance/compare/v0.1.0...v0.2.0) (2026-02-28)
+
+
+### Features
+
+* add conformance badge portal server ([81b86ed](https://github.com/openjobspec/ojs-conformance/commit/81b86eda84463a4db26e8eb4e00ae2e9937d215a))
+* add monitoring dashboard configuration ([94c9660](https://github.com/openjobspec/ojs-conformance/commit/94c96601bc23674d016d4474007820767dd6970f))
+
+
+### Bug Fixes
+
+* correct assertion timing in async tests ([579e853](https://github.com/openjobspec/ojs-conformance/commit/579e8537fbbfb9ebb6d2f025d33e97c663c913f8))
+
 ## [Unreleased]
 
 ### Added
@@ -20,4 +33,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rich assertion library (`lib/`) with JSONPath, regex, range, and type matchers
 - 145 JSON test definition files
 - README with structure overview and usage instructions
-
