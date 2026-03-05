@@ -1,0 +1,68 @@
+{
+  "test_id": "EXT-SLS-001",
+  "level": 0,
+  "category": "ext-serverless",
+  "name": "serverless-meta-preservation",
+  "description": "Enqueue a job with serverless meta fields (memory_mb, timeout_s, runtime, function_arn). Verify the advisory meta fields are preserved in the job envelope.",
+  "spec_ref": "ojs-serverless#section-4",
+  "tags": ["extension", "serverless", "meta", "advisory"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "serverless.handler",
+        "args": [
+          {
+            "action": "process-image",
+            "image_url": "s3://bucket/image.png"
+          }
+        ],
+        "options": {
+          "queue": "conformance-serverless"
+        },
+        "meta": {
+          "serverless": {
+            "memory_mb": 512,
+            "timeout_s": 30,
+            "runtime": "nodejs20.x",
+            "function_arn": "arn:aws:lambda:us-east-1:123456789:function:process-image"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta.serverless.memory_mb": 512,
+          "$.job.meta.serverless.timeout_s": 30,
+          "$.job.meta.serverless.runtime": "nodejs20.x"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "info",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.meta.serverless.memory_mb": 512,
+          "$.job.meta.serverless.timeout_s": 30,
+          "$.job.meta.serverless.runtime": "nodejs20.x"
+        }
+      }
+    }
+  ]
+}

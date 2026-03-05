@@ -1,0 +1,56 @@
+{
+  "test_id": "EXT-AI-003",
+  "level": 0,
+  "category": "ext-ai-agents",
+  "name": "ai-agent-tool-calling",
+  "description": "Enqueue an AI agent job with tool definitions. Verify the tools array and tool_choice field are preserved in the job envelope.",
+  "spec_ref": "ojs-ai-agents#section-5",
+  "tags": ["extension", "ai-agents", "tool-calling"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ai.agent.tool_use",
+        "args": [
+          {
+            "prompt": "Look up the weather in San Francisco"
+          }
+        ],
+        "options": {
+          "queue": "conformance-ai-tools"
+        },
+        "ext_agent_model": "gpt-4",
+        "ext_agent_tools": [
+          {
+            "name": "get_weather",
+            "description": "Get current weather for a location",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "location": { "type": "string" }
+              },
+              "required": ["location"]
+            }
+          }
+        ],
+        "ext_agent_tool_choice": "auto"
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.ext_agent_tool_choice": "auto",
+          "$.job.ext_agent_tools": { "$size": { "$gte": 1 } }
+        }
+      }
+    }
+  ]
+}

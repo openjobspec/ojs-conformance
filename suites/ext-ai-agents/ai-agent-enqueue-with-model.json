@@ -1,0 +1,67 @@
+{
+  "test_id": "EXT-AI-001",
+  "level": 0,
+  "category": "ext-ai-agents",
+  "name": "ai-agent-enqueue-with-model",
+  "description": "Enqueue a job with AI agent extension fields (model, provider, temperature, max_tokens). Verify the extension fields are preserved in the job envelope.",
+  "spec_ref": "ojs-ai-agents#section-3",
+  "tags": ["extension", "ai-agents", "enqueue", "model-config"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ai.agent.chat",
+        "args": [
+          {
+            "prompt": "Summarize this document",
+            "document_id": "doc-123"
+          }
+        ],
+        "options": {
+          "queue": "conformance-ai-agents"
+        },
+        "ext_agent_model": "gpt-4",
+        "ext_agent_provider": "openai",
+        "ext_agent_temperature": 0.7,
+        "ext_agent_max_tokens": 2048
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.type": "ai.agent.chat",
+          "$.job.ext_agent_model": "gpt-4",
+          "$.job.ext_agent_provider": "openai",
+          "$.job.ext_agent_temperature": 0.7,
+          "$.job.ext_agent_max_tokens": 2048
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "info",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.ext_agent_model": "gpt-4",
+          "$.job.ext_agent_provider": "openai",
+          "$.job.ext_agent_temperature": 0.7,
+          "$.job.ext_agent_max_tokens": 2048
+        }
+      }
+    }
+  ]
+}

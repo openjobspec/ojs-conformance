@@ -1,0 +1,91 @@
+{
+  "test_id": "EXT-SLS-002",
+  "level": 0,
+  "category": "ext-serverless",
+  "name": "serverless-job-lifecycle",
+  "description": "Verify a serverless-tagged job follows the standard OJS lifecycle: enqueue → fetch → ack with result. The serverless meta should not affect core lifecycle behavior.",
+  "spec_ref": "ojs-serverless#section-3",
+  "tags": ["extension", "serverless", "lifecycle", "compatibility"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "serverless.process",
+        "args": [
+          {
+            "payload": "test-data"
+          }
+        ],
+        "options": {
+          "queue": "conformance-serverless-lifecycle"
+        },
+        "meta": {
+          "serverless": {
+            "memory_mb": 256,
+            "timeout_s": 15,
+            "runtime": "python3.12"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-serverless-lifecycle"],
+        "worker_id": "push_worker_sls-001"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].meta.serverless.memory_mb": 256
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "ack",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "{{steps.step-1.response.body.job.id}}",
+        "result": {
+          "status": "completed",
+          "output": "processed successfully"
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    }
+  ]
+}

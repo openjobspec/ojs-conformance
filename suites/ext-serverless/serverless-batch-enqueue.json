@@ -1,0 +1,57 @@
+{
+  "test_id": "EXT-SLS-003",
+  "level": 0,
+  "category": "ext-serverless",
+  "name": "serverless-batch-enqueue",
+  "description": "Batch enqueue multiple serverless jobs with different runtime configurations. Verify each job preserves its individual serverless meta.",
+  "spec_ref": "ojs-serverless#section-4",
+  "tags": ["extension", "serverless", "batch", "meta"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "batch-enqueue",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "jobs": [
+          {
+            "type": "serverless.image_resize",
+            "args": [{"size": "thumbnail"}],
+            "options": { "queue": "conformance-serverless-batch" },
+            "meta": {
+              "serverless": {
+                "memory_mb": 1024,
+                "timeout_s": 60,
+                "runtime": "nodejs20.x"
+              }
+            }
+          },
+          {
+            "type": "serverless.pdf_generate",
+            "args": [{"template": "invoice"}],
+            "options": { "queue": "conformance-serverless-batch" },
+            "meta": {
+              "serverless": {
+                "memory_mb": 2048,
+                "timeout_s": 120,
+                "runtime": "python3.12"
+              }
+            }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.jobs": { "$size": { "$gte": 2 } },
+          "$.jobs[0].state": "available",
+          "$.jobs[1].state": "available"
+        }
+      }
+    }
+  ]
+}

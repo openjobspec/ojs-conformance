@@ -1,0 +1,43 @@
+{
+  "test_id": "EXT-AI-002",
+  "level": 0,
+  "category": "ext-ai-agents",
+  "name": "ai-agent-token-budget",
+  "description": "Enqueue an AI agent job with a token budget. Verify the token_budget field is preserved and tokens_used is initialized to 0.",
+  "spec_ref": "ojs-ai-agents#section-4",
+  "tags": ["extension", "ai-agents", "token-budget"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ai.agent.completion",
+        "args": [
+          {
+            "prompt": "Generate a report"
+          }
+        ],
+        "options": {
+          "queue": "conformance-ai-budget"
+        },
+        "ext_agent_model": "claude-3-opus",
+        "ext_agent_provider": "anthropic",
+        "ext_agent_token_budget": 10000
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.ext_agent_token_budget": 10000
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "test_id": "EXT-AI-004",
+  "level": 0,
+  "category": "ext-ai-agents",
+  "name": "ai-agent-delegation-depth",
+  "description": "Enqueue an AI agent job with delegation tracking fields (parent_id, delegation_depth, max_delegation_depth). Verify the fields are preserved and the delegation depth constraint is stored.",
+  "spec_ref": "ojs-ai-agents#section-6",
+  "tags": ["extension", "ai-agents", "delegation", "depth-limit"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ai.agent.delegate",
+        "args": [
+          {
+            "task": "Research and summarize"
+          }
+        ],
+        "options": {
+          "queue": "conformance-ai-delegation"
+        },
+        "ext_agent_model": "gpt-4",
+        "ext_agent_delegation_depth": 0,
+        "ext_agent_max_delegation_depth": 5
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.ext_agent_delegation_depth": 0,
+          "$.job.ext_agent_max_delegation_depth": 5
+        }
+      }
+    }
+  ]
+}

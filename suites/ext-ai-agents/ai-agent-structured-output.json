@@ -1,0 +1,56 @@
+{
+  "test_id": "EXT-AI-005",
+  "level": 0,
+  "category": "ext-ai-agents",
+  "name": "ai-agent-structured-output",
+  "description": "Enqueue an AI agent job with structured output configuration (output_schema, output_format). Verify the fields are preserved in the job envelope.",
+  "spec_ref": "ojs-ai-agents#section-7",
+  "tags": ["extension", "ai-agents", "structured-output"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "ai.agent.extract",
+        "args": [
+          {
+            "text": "Extract entities from this document"
+          }
+        ],
+        "options": {
+          "queue": "conformance-ai-output"
+        },
+        "ext_agent_model": "gpt-4",
+        "ext_agent_output_format": "json",
+        "ext_agent_output_schema": {
+          "type": "object",
+          "properties": {
+            "entities": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "confidence": {
+              "type": "number"
+            }
+          },
+          "required": ["entities"]
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.ext_agent_output_format": "json",
+          "$.job.ext_agent_output_schema": { "$exists": true }
+        }
+      }
+    }
+  ]
+}
