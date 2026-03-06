@@ -1,0 +1,30 @@
+{
+  "test_id": "L0-OPS-030",
+  "level": 0,
+  "category": "operations",
+  "name": "error-response-structure-not-found",
+  "description": "A 404 error response MUST include the standard OJS error structure: code (string), message (string), retryable (boolean). The response SHOULD include hint (string) and docs_url (string) fields for developer guidance.",
+  "spec_ref": "ojs-errors#section-2",
+  "tags": ["level-0", "operations", "error-structure", "not-found", "docs-url"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/019539a4-0000-7000-8000-ffffffffffff",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 404,
+        "body": {
+          "$.error.code": "not_found",
+          "$.error.message": { "$exists": true, "$type": "string" },
+          "$.error.retryable": false,
+          "$.error.hint": { "$exists": true, "$type": "string" },
+          "$.error.docs_url": { "$exists": true, "$type": "string" }
+        }
+      }
+    }
+  ]
+}

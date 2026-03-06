@@ -1,0 +1,30 @@
+{
+  "test_id": "L0-OPS-033",
+  "level": 0,
+  "category": "operations",
+  "name": "error-response-content-type",
+  "description": "All error responses MUST use the application/openjobspec+json content type (or application/json). The response body MUST be valid JSON containing an error object.",
+  "spec_ref": "ojs-http-binding#section-4.1",
+  "tags": ["level-0", "operations", "error-structure", "content-type"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "get-job",
+      "path": "/ojs/v1/jobs/019539a4-0000-7000-8000-eeeeeeeeeeee",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 404,
+        "headers": {
+          "Content-Type": { "$match": "application/(openjobspec\\+)?json" }
+        },
+        "body": {
+          "$.error": { "$exists": true },
+          "$.error.code": { "$exists": true, "$type": "string" }
+        }
+      }
+    }
+  ]
+}

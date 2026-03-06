@@ -1,0 +1,32 @@
+{
+  "test_id": "L0-OPS-031",
+  "level": 0,
+  "category": "operations",
+  "name": "error-response-structure-validation",
+  "description": "A 400 validation error response MUST include code, message, and retryable fields. The code MUST be a string from the OJS error catalog. The retryable field MUST be false for client errors.",
+  "spec_ref": "ojs-errors#section-2",
+  "tags": ["level-0", "operations", "error-structure", "validation"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "args": ["missing-type-field"]
+      },
+      "assertions": {
+        "status": 400,
+        "body": {
+          "$.error.code": { "$exists": true, "$type": "string" },
+          "$.error.message": { "$exists": true, "$type": "string" },
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}

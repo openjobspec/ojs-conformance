@@ -1,0 +1,54 @@
+{
+  "test_id": "L0-OPS-032",
+  "level": 0,
+  "category": "operations",
+  "name": "error-response-structure-conflict",
+  "description": "A conflict error response (e.g., ACK on a non-active job) MUST include the standard OJS error fields: code, message, retryable. The code MUST be 'conflict' and retryable MUST be false.",
+  "spec_ref": "ojs-errors#section-2",
+  "tags": ["level-0", "operations", "error-structure", "conflict"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.error_structure",
+        "args": ["conflict-test"]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true, "$type": "string" },
+          "$.job.state": "available"
+        }
+      },
+      "captures": {
+        "job_id": "$.job.id"
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "ack",
+      "path": "/ojs/v1/workers/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "job_id": "${job_id}"
+      },
+      "assertions": {
+        "status": 409,
+        "body": {
+          "$.error.code": "conflict",
+          "$.error.message": { "$exists": true, "$type": "string" },
+          "$.error.retryable": false
+        }
+      }
+    }
+  ]
+}
