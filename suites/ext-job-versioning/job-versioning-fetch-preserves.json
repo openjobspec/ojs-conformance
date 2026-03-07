@@ -1,0 +1,93 @@
+{
+  "test_id": "EXT-VER-005",
+  "level": 0,
+  "category": "ext-job-versioning",
+  "name": "job-versioning-fetch-preserves",
+  "description": "Enqueue a versioned job, fetch it as a worker, and ACK it. Verify the version field is preserved through the complete lifecycle.",
+  "spec_ref": "ojs-job-versioning#section-3",
+  "tags": ["extension", "job-versioning", "lifecycle", "fetch"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-versioned",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "data.process",
+        "args": ["dataset-123"],
+        "version": 3,
+        "options": {
+          "queue": "conformance-versioning-lifecycle"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.version": 3
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-versioning-lifecycle"],
+        "worker_id": "test-worker-ver-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].version": 3,
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "ack",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "worker_id": "test-worker-ver-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "verify-version-after-completion",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed",
+          "$.job.version": 3
+        }
+      }
+    }
+  ]
+}

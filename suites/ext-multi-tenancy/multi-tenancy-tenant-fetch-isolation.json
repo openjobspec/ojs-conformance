@@ -1,0 +1,81 @@
+{
+  "test_id": "EXT-MT-005",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-tenant-fetch-isolation",
+  "description": "Enqueue jobs under two different tenants. Verify a worker fetching for tenant A only receives tenant A's jobs, not tenant B's.",
+  "spec_ref": "ojs-multi-tenancy#section-4",
+  "tags": ["extension", "multi-tenancy", "fetch-isolation", "security"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-tenant-a",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-fetch-a"
+      },
+      "body": {
+        "type": "test.tenant.isolation",
+        "args": ["tenant-a-secret-data"],
+        "options": {
+          "queue": "conformance-tenant-fetch-iso"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue-tenant-b",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-fetch-b"
+      },
+      "body": {
+        "type": "test.tenant.isolation",
+        "args": ["tenant-b-secret-data"],
+        "options": {
+          "queue": "conformance-tenant-fetch-iso"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "fetch-as-tenant-a",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-fetch-a"
+      },
+      "body": {
+        "queues": ["conformance-tenant-fetch-iso"],
+        "worker_id": "worker-tenant-a-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].meta.tenant_id": "tenant-fetch-a",
+          "$.jobs[0].args[0]": "tenant-a-secret-data"
+        }
+      }
+    }
+  ]
+}

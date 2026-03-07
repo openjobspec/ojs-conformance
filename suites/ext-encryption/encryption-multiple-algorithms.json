@@ -1,0 +1,105 @@
+{
+  "test_id": "EXT-ENC-006",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-multiple-algorithms",
+  "description": "Enqueue two jobs using different encryption algorithms (aes-256-gcm and chacha20-poly1305). Verify each job preserves its own codec identifier independently.",
+  "spec_ref": "ojs-encryption#section-4",
+  "tags": ["extension", "encryption", "multi-algorithm", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-aes",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted.aes",
+        "args": [
+          "YWVzLWVuY3J5cHRlZA=="
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs.codec.encodings": ["binary/encrypted"],
+          "ojs.codec.key_id": "aes-key-001"
+        },
+        "options": {
+          "queue": "conformance-encryption-multi-algo"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue-chacha",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted.chacha",
+        "args": [
+          "Y2hhY2hhLWVuY3J5cHRlZA=="
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs.codec.encodings": ["binary/encrypted-chacha"],
+          "ojs.codec.key_id": "chacha-key-001"
+        },
+        "options": {
+          "queue": "conformance-encryption-multi-algo"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted-chacha"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "verify-aes-preserved",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted",
+          "$.job.meta.ojs.codec.key_id": "aes-key-001"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "verify-chacha-preserved",
+      "path": "/ojs/v1/jobs/{{steps.step-2.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted-chacha",
+          "$.job.meta.ojs.codec.key_id": "chacha-key-001"
+        }
+      }
+    }
+  ]
+}

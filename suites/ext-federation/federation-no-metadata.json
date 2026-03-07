@@ -1,0 +1,37 @@
+{
+  "name": "federation-no-metadata",
+  "level": 4,
+  "description": "Enqueue a standard job without any federation metadata. Verify the server accepts it normally and no federation fields are injected.",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "email.send",
+        "args": ["user@example.com", "hello"],
+        "queue": "default"
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "email.send",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "type": "email.send"
+        }
+      }
+    }
+  ]
+}

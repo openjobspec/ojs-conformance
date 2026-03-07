@@ -1,0 +1,51 @@
+{
+  "test_id": "EXT-VER-006",
+  "level": 0,
+  "category": "ext-job-versioning",
+  "name": "job-versioning-batch-mixed",
+  "description": "Batch enqueue jobs with mixed versions. Verify each job in the batch preserves its own version independently.",
+  "spec_ref": "ojs-job-versioning#section-3",
+  "tags": ["extension", "job-versioning", "batch", "mixed-versions"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "batch-enqueue-mixed-versions",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "jobs": [
+          {
+            "type": "email.send",
+            "args": ["user1@example.com"],
+            "version": 1,
+            "options": { "queue": "conformance-versioning-batch" }
+          },
+          {
+            "type": "email.send",
+            "args": ["user2@example.com", {"template": "v2"}],
+            "version": 2,
+            "options": { "queue": "conformance-versioning-batch" }
+          },
+          {
+            "type": "email.send",
+            "args": ["user3@example.com", {"template": "v3", "priority": "high"}],
+            "version": 3,
+            "options": { "queue": "conformance-versioning-batch" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.jobs[0].version": 1,
+          "$.jobs[1].version": 2,
+          "$.jobs[2].version": 3
+        }
+      }
+    }
+  ]
+}

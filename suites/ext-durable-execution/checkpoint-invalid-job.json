@@ -1,0 +1,26 @@
+{
+  "test_id": "EXT-DUR-008",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-invalid-job",
+  "description": "Saving or retrieving a checkpoint for a non-existent job ID returns 404.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "invalid-job", "error"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "save-checkpoint-nonexistent-job",
+      "path": "/ojs/v1/jobs/01965000-0000-7000-8000-000000000000/checkpoint",
+      "body": { "state": { "data": "orphaned" } },
+      "expect": { "status": 404 }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "get-checkpoint-nonexistent-job",
+      "path": "/ojs/v1/jobs/01965000-0000-7000-8000-000000000000/checkpoint",
+      "expect": { "status": 404 }
+    }
+  ]
+}

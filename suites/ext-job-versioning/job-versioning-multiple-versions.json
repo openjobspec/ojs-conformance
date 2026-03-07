@@ -1,0 +1,93 @@
+{
+  "test_id": "EXT-VER-004",
+  "level": 0,
+  "category": "ext-job-versioning",
+  "name": "job-versioning-multiple-versions",
+  "description": "Enqueue two jobs of the same type with different versions. Verify both are accepted and each preserves its own version number independently.",
+  "spec_ref": "ojs-job-versioning#section-3",
+  "tags": ["extension", "job-versioning", "multi-version", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-v1",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "report.generate",
+        "args": ["monthly-report"],
+        "version": 1,
+        "options": {
+          "queue": "conformance-versioning-multi"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.version": 1
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue-v2",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "report.generate",
+        "args": ["monthly-report", {"format": "pdf"}],
+        "version": 2,
+        "options": {
+          "queue": "conformance-versioning-multi"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.version": 2
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "verify-v1",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.version": 1,
+          "$.job.type": "report.generate"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "verify-v2",
+      "path": "/ojs/v1/jobs/{{steps.step-2.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.version": 2,
+          "$.job.type": "report.generate"
+        }
+      }
+    }
+  ]
+}

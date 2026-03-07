@@ -1,0 +1,75 @@
+{
+  "test_id": "EXT-ENC-010",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-custom-codec-metadata",
+  "description": "Enqueue a job with custom codec-specific metadata fields beyond the standard ojs_codec, ojs_key_id, and ojs_nonce. Verify the server preserves all ojs_-prefixed metadata fields as opaque passthrough.",
+  "spec_ref": "ojs-encryption#section-4",
+  "tags": ["extension", "encryption", "custom-metadata", "passthrough"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-with-custom-meta",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted.custom",
+        "args": [
+          "Y3VzdG9tLWNvZGVjLXBheWxvYWQ="
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs.codec.encodings": ["binary/encrypted"],
+          "ojs.codec.key_id": "custom-key-001",
+          "ojs.codec.nonce": "Y3VzdG9tLW5vbmNl",
+          "ojs.codec.aad": "YWRkaXRpb25hbC1hdXRoLWRhdGE=",
+          "ojs.codec.tag": "YXV0aC10YWc=",
+          "ojs.codec.key_version": "3",
+          "custom_field": "user-defined-value"
+        },
+        "options": {
+          "queue": "conformance-encryption-custom"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-encryption-custom"],
+        "worker_id": "test-worker-enc-custom-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].meta.ojs_encoded": true,
+          "$.jobs[0].meta.ojs.codec.encodings[0]": "binary/encrypted",
+          "$.jobs[0].meta.ojs.codec.key_id": "custom-key-001",
+          "$.jobs[0].meta.ojs.codec.nonce": "Y3VzdG9tLW5vbmNl",
+          "$.jobs[0].meta.ojs.codec.aad": "YWRkaXRpb25hbC1hdXRoLWRhdGE=",
+          "$.jobs[0].meta.ojs.codec.tag": "YXV0aC10YWc=",
+          "$.jobs[0].meta.ojs.codec.key_version": "3",
+          "$.jobs[0].meta.custom_field": "user-defined-value"
+        }
+      }
+    }
+  ]
+}

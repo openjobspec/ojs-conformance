@@ -1,0 +1,67 @@
+{
+  "test_id": "EXT-DUR-006",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-large-state",
+  "description": "Save a checkpoint with a large nested state object to verify the server handles complex checkpoint data correctly.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "large-state"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.large",
+        "args": ["large-state-test"],
+        "options": { "queue": "conformance-durable" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "save-large-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": {
+        "state": {
+          "processed_items": 50000,
+          "total_items": 100000,
+          "cursor": "page-500",
+          "errors": [
+            {"index": 123, "message": "timeout"},
+            {"index": 456, "message": "rate limited"},
+            {"index": 789, "message": "invalid format"}
+          ],
+          "metrics": {
+            "avg_latency_ms": 45,
+            "p99_latency_ms": 250,
+            "throughput_per_sec": 1200
+          },
+          "partitions": {
+            "partition-0": {"offset": 10000, "lag": 50},
+            "partition-1": {"offset": 9500, "lag": 100},
+            "partition-2": {"offset": 10200, "lag": 0}
+          }
+        }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "verify-large-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.processed_items": 50000,
+        "body.state.total_items": 100000,
+        "body.state.cursor": "page-500",
+        "body.state.metrics.p99_latency_ms": 250,
+        "body.sequence": 1
+      }
+    }
+  ]
+}

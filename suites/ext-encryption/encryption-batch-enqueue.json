@@ -1,0 +1,60 @@
+{
+  "test_id": "EXT-ENC-007",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-batch-enqueue",
+  "description": "Batch enqueue multiple encrypted jobs in a single request. Verify each job preserves its own codec metadata independently.",
+  "spec_ref": "ojs-encryption#section-3",
+  "tags": ["extension", "encryption", "batch", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "batch-enqueue",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "jobs": [
+          {
+            "type": "test.encrypted.batch",
+            "args": ["ZW5jcnlwdGVkLWl0ZW0tMQ=="],
+            "meta": {
+              "ojs_encoded": true,
+              "ojs.codec.encodings": ["binary/encrypted"],
+              "ojs.codec.key_id": "batch-key-001"
+            },
+            "options": {
+              "queue": "conformance-encryption-batch"
+            }
+          },
+          {
+            "type": "test.encrypted.batch",
+            "args": ["ZW5jcnlwdGVkLWl0ZW0tMg=="],
+            "meta": {
+              "ojs_encoded": true,
+              "ojs.codec.encodings": ["binary/encrypted"],
+              "ojs.codec.key_id": "batch-key-002"
+            },
+            "options": {
+              "queue": "conformance-encryption-batch"
+            }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.jobs[0].id": { "$exists": true },
+          "$.jobs[0].meta.ojs_encoded": true,
+          "$.jobs[0].meta.ojs.codec.key_id": "batch-key-001",
+          "$.jobs[1].id": { "$exists": true },
+          "$.jobs[1].meta.ojs_encoded": true,
+          "$.jobs[1].meta.ojs.codec.key_id": "batch-key-002"
+        }
+      }
+    }
+  ]
+}

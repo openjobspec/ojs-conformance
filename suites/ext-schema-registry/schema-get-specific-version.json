@@ -1,0 +1,70 @@
+{
+  "test_id": "EXT-SCH-007",
+  "level": 0,
+  "category": "ext-schema-registry",
+  "name": "schema-get-specific-version",
+  "description": "Register multiple versions and retrieve a specific one by version number.",
+  "spec_ref": "ojs-schema-registry#section-4",
+  "tags": ["extension", "schema-registry", "get-version", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "register-v1",
+      "path": "/ojs/v1/admin/schemas/user.signup/1",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "schema": {
+          "type": "array",
+          "items": [{ "type": "string", "description": "email" }],
+          "minItems": 1
+        }
+      },
+      "assertions": {
+        "status": { "$in": [200, 201] }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "register-v2",
+      "path": "/ojs/v1/admin/schemas/user.signup/2",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "schema": {
+          "type": "array",
+          "items": [
+            { "type": "string", "description": "email" },
+            { "type": "object", "description": "preferences" }
+          ],
+          "minItems": 1
+        }
+      },
+      "assertions": {
+        "status": { "$in": [200, 201] }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "get-v1-specifically",
+      "path": "/ojs/v1/admin/schemas/user.signup/1",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.version": 1,
+          "$.schema.minItems": 1
+        }
+      }
+    }
+  ]
+}

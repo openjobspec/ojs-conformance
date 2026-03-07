@@ -1,0 +1,31 @@
+{
+  "test_id": "EXT-DUR-005",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-not-found",
+  "description": "Retrieving a checkpoint for a job that has no checkpoint saved returns 404.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "not-found"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.nocheckpoint",
+        "args": ["no-checkpoint-test"],
+        "options": { "queue": "conformance-durable" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "get-nonexistent-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": { "status": 404 }
+    }
+  ]
+}

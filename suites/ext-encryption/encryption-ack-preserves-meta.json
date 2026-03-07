@@ -1,0 +1,103 @@
+{
+  "test_id": "EXT-ENC-008",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-ack-preserves-meta",
+  "description": "Enqueue an encrypted job, fetch it, and ACK it. Verify the codec metadata is preserved through the complete job lifecycle including after completion.",
+  "spec_ref": "ojs-encryption#section-3",
+  "tags": ["extension", "encryption", "lifecycle", "ack"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted.lifecycle",
+        "args": [
+          "bGlmZWN5Y2xlLXBheWxvYWQ="
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs.codec.encodings": ["binary/encrypted"],
+          "ojs.codec.key_id": "lifecycle-key-001",
+          "ojs.codec.nonce": "bGlmZWN5Y2xlLW5vbmNl"
+        },
+        "options": {
+          "queue": "conformance-encryption-lifecycle"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "queues": ["conformance-encryption-lifecycle"],
+        "worker_id": "test-worker-enc-lifecycle-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "{{steps.step-1.response.body.job.id}}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "ack",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/ack",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "worker_id": "test-worker-enc-lifecycle-1"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "verify-meta-after-completion",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed",
+          "$.job.meta.ojs_encoded": true,
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted",
+          "$.job.meta.ojs.codec.key_id": "lifecycle-key-001",
+          "$.job.meta.ojs.codec.nonce": "bGlmZWN5Y2xlLW5vbmNl",
+          "$.job.args[0]": "bGlmZWN5Y2xlLXBheWxvYWQ="
+        }
+      }
+    }
+  ]
+}

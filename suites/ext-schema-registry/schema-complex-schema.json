@@ -1,0 +1,70 @@
+{
+  "test_id": "EXT-SCH-011",
+  "level": 0,
+  "category": "ext-schema-registry",
+  "name": "schema-complex-schema",
+  "description": "Register a complex JSON Schema with nested objects, required fields, and patterns. Verify the server stores and returns it faithfully.",
+  "spec_ref": "ojs-schema-registry#section-4",
+  "tags": ["extension", "schema-registry", "complex", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "register-complex",
+      "path": "/ojs/v1/admin/schemas/ml.train/1",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "schema": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "model_name": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+                "hyperparameters": {
+                  "type": "object",
+                  "properties": {
+                    "learning_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "epochs": { "type": "integer", "minimum": 1 },
+                    "batch_size": { "type": "integer", "enum": [16, 32, 64, 128, 256] }
+                  },
+                  "required": ["learning_rate", "epochs"]
+                },
+                "dataset": { "type": "string", "format": "uri" }
+              },
+              "required": ["model_name", "hyperparameters"]
+            }
+          ],
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "assertions": {
+        "status": { "$in": [200, 201] },
+        "body": {
+          "$.type": "ml.train",
+          "$.version": 1
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "verify-complex-preserved",
+      "path": "/ojs/v1/admin/schemas/ml.train/1",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.schema.type": "array",
+          "$.schema.items[0].required[0]": "model_name"
+        }
+      }
+    }
+  ]
+}

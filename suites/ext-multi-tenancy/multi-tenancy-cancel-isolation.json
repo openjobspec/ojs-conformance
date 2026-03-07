@@ -1,0 +1,66 @@
+{
+  "test_id": "EXT-MT-008",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-cancel-isolation",
+  "description": "Verify that cancelling a job requires the correct tenant header. A job owned by tenant A cannot be cancelled by tenant B.",
+  "spec_ref": "ojs-multi-tenancy#section-4",
+  "tags": ["extension", "multi-tenancy", "cancel", "isolation", "security"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-as-tenant-a",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-cancel-a"
+      },
+      "body": {
+        "type": "test.tenant.cancel",
+        "args": ["cancel-isolation-test"],
+        "options": {
+          "queue": "conformance-tenant-cancel"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "cancel-as-wrong-tenant",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}/cancel",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-cancel-b"
+      },
+      "body": {},
+      "assertions": {
+        "status_one_of": [403, 404]
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "verify-not-cancelled",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-cancel-a"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "available"
+        }
+      }
+    }
+  ]
+}

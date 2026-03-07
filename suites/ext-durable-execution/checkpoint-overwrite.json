@@ -1,0 +1,63 @@
+{
+  "test_id": "EXT-DUR-004",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-overwrite",
+  "description": "Saving a new checkpoint overwrites the previous state completely. The old state is not merged with the new state.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "overwrite"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.overwrite",
+        "args": ["overwrite-test"],
+        "options": { "queue": "conformance-durable" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "save-initial-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": {
+        "state": {
+          "processed": 100,
+          "cursor": "abc123",
+          "batch_id": "batch-001"
+        }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "save-overwriting-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": {
+        "state": {
+          "processed": 200,
+          "cursor": "def456"
+        }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "verify-overwritten",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.processed": 200,
+        "body.state.cursor": "def456",
+        "body.sequence": 2
+      }
+    }
+  ]
+}

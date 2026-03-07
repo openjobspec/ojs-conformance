@@ -1,0 +1,31 @@
+{
+  "test_id": "EXT-MT-006",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-missing-header",
+  "description": "When multi-tenancy is enabled, enqueuing a job without the X-OJS-Tenant header should either use a default tenant or return an error, depending on server configuration.",
+  "spec_ref": "ojs-multi-tenancy#section-3",
+  "tags": ["extension", "multi-tenancy", "missing-header", "edge-case"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-without-tenant",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.tenant.no-header",
+        "args": ["no-tenant-test"],
+        "options": {
+          "queue": "conformance-tenant-no-header"
+        }
+      },
+      "assertions": {
+        "status_one_of": [201, 400]
+      }
+    }
+  ]
+}

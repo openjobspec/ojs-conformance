@@ -1,0 +1,107 @@
+{
+  "test_id": "EXT-ENC-003",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-key-rotation",
+  "description": "Enqueue two jobs with different key IDs to verify the server preserves distinct key_id values, supporting key rotation where old and new keys coexist.",
+  "spec_ref": "ojs-encryption#section-5",
+  "tags": ["extension", "encryption", "key-rotation", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-old-key",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted.rotation",
+        "args": [
+          "b2xkLWtleS1wYXlsb2Fk"
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs.codec.encodings": ["binary/encrypted"],
+          "ojs.codec.key_id": "key-2024-001"
+        },
+        "options": {
+          "queue": "conformance-encryption-rotation"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta.ojs.codec.key_id": "key-2024-001"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue-new-key",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.encrypted.rotation",
+        "args": [
+          "bmV3LWtleS1wYXlsb2Fk"
+        ],
+        "meta": {
+          "ojs_encoded": true,
+          "ojs.codec.encodings": ["binary/encrypted"],
+          "ojs.codec.key_id": "key-2025-001"
+        },
+        "options": {
+          "queue": "conformance-encryption-rotation"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.meta.ojs.codec.key_id": "key-2025-001"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "verify-old-key-preserved",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.meta.ojs.codec.key_id": "key-2024-001",
+          "$.job.args[0]": "b2xkLWtleS1wYXlsb2Fk"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "GET",
+      "intent": "verify-new-key-preserved",
+      "path": "/ojs/v1/jobs/{{steps.step-2.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.meta.ojs.codec.key_id": "key-2025-001",
+          "$.job.args[0]": "bmV3LWtleS1wYXlsb2Fk"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "test_id": "EXT-SCH-012",
+  "level": 0,
+  "category": "ext-schema-registry",
+  "name": "schema-list-versions-empty",
+  "description": "List versions for a job type with no schemas registered. Verify the server returns 404 or an empty list.",
+  "spec_ref": "ojs-schema-registry#section-4",
+  "tags": ["extension", "schema-registry", "list-versions", "empty"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "list-versions-nonexistent",
+      "path": "/ojs/v1/admin/schemas/no.schemas.here/versions",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status_one_of": [200, 404]
+      }
+    }
+  ]
+}

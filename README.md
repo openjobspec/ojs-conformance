@@ -40,9 +40,24 @@ ojs-conformance/
       bulk/                        # Batch enqueue
       queue-ops/                   # Queue pause/resume/stats
     ext-admin-api/                 # Extension: Admin API
+    ext-ai-agents/                 # Extension: AI agent patterns
     ext-backpressure/              # Extension: Backpressure
     ext-dead-letter/               # Extension: Dead letter (extended)
+    ext-durable-execution/         # Extension: Durable execution (checkpoints)
+    ext-encryption/                # Extension: Client-side encryption
+    ext-fair-scheduling/           # Extension: Fair queue scheduling
+    ext-federation/                # Extension: Multi-region federation
+    ext-graceful-shutdown/         # Extension: Graceful shutdown
+    ext-job-versioning/            # Extension: Job versioning & routing
+    ext-middleware/                 # Extension: Middleware chains
+    ext-ml-resources/              # Extension: ML/GPU resource management
+    ext-multi-tenancy/             # Extension: Multi-tenant isolation
+    ext-observability/             # Extension: OpenTelemetry & metrics
+    ext-progress/                  # Extension: Job progress reporting
     ext-rate-limiting/             # Extension: Rate limiting (extended)
+    ext-schema-registry/           # Extension: Schema registry operations
+    ext-serverless/                # Extension: Serverless adapters
+    ext-webhooks/                  # Extension: Webhook notifications
   runner/                          # Test runner implementations
     http/                          # Go-based HTTP test runner
     grpc/                          # Go-based gRPC test runner (scaffold)

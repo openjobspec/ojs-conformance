@@ -1,0 +1,49 @@
+{
+  "name": "federation-circuit-breaker",
+  "level": 4,
+  "description": "Enqueue a job with circuit breaker metadata indicating the target region's health status. Verify the circuit breaker metadata is preserved for routing decisions.",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "payment.process",
+        "args": ["txn_abc123", 99.99],
+        "queue": "payments",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-bf80-7123-ce56-ef1234567890",
+          "ojs.federation.region_affinity": "overflow",
+          "ojs.federation.source_region": "us-east-1",
+          "ojs.federation.target_region": "us-west-2",
+          "ojs.federation.circuit_state": "half-open",
+          "ojs.federation.failover_reason": "health_check_timeout"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "payment.process",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "ojs.federation.circuit_state": "half-open",
+            "ojs.federation.failover_reason": "health_check_timeout",
+            "ojs.federation.target_region": "us-west-2"
+          }
+        }
+      }
+    }
+  ]
+}

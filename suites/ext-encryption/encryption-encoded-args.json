@@ -23,8 +23,8 @@
         ],
         "meta": {
           "ojs_encoded": true,
-          "ojs_codec": "aes-256-gcm",
-          "ojs_key_id": "key-2024-001"
+          "ojs.codec.encodings": ["binary/encrypted"],
+          "ojs.codec.key_id": "key-2024-001"
         },
         "options": {
           "queue": "conformance-encryption"
@@ -37,8 +37,8 @@
           "$.job.state": "available",
           "$.job.args[0]": "ZW5jcnlwdGVkLXBheWxvYWQ=",
           "$.job.meta.ojs_encoded": true,
-          "$.job.meta.ojs_codec": "aes-256-gcm",
-          "$.job.meta.ojs_key_id": "key-2024-001"
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted",
+          "$.job.meta.ojs.codec.key_id": "key-2024-001"
         }
       }
     },
@@ -56,7 +56,7 @@
           "$.job.id": "{{steps.step-1.response.body.job.id}}",
           "$.job.args[0]": "ZW5jcnlwdGVkLXBheWxvYWQ=",
           "$.job.meta.ojs_encoded": true,
-          "$.job.meta.ojs_codec": "aes-256-gcm"
+          "$.job.meta.ojs.codec.encodings[0]": "binary/encrypted"
         }
       }
     }

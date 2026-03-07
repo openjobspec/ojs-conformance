@@ -1,0 +1,77 @@
+{
+  "test_id": "EXT-MT-004",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-tenant-queue-stats",
+  "description": "Enqueue jobs under two different tenants into the same queue. Verify each tenant's queue stats reflect only their own jobs.",
+  "spec_ref": "ojs-multi-tenancy#section-5",
+  "tags": ["extension", "multi-tenancy", "queue-stats", "isolation"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-tenant-a",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-alpha"
+      },
+      "body": {
+        "type": "test.tenant.stats",
+        "args": ["alpha-job-1"],
+        "options": {
+          "queue": "conformance-tenant-stats"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.meta.tenant_id": "tenant-alpha"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue-tenant-b",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-beta"
+      },
+      "body": {
+        "type": "test.tenant.stats",
+        "args": ["beta-job-1"],
+        "options": {
+          "queue": "conformance-tenant-stats"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.meta.tenant_id": "tenant-beta"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "get-tenant-a-stats",
+      "path": "/ojs/v1/queues/conformance-tenant-stats",
+      "headers": {
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-alpha"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.queue.name": "conformance-tenant-stats"
+        }
+      }
+    }
+  ]
+}

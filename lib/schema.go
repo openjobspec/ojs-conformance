@@ -28,16 +28,17 @@ type Setup struct {
 
 // Step represents a single HTTP interaction in a test.
 type Step struct {
-	ID          string            `json:"id"`
-	Action      string            `json:"action"`
-	Intent      string            `json:"intent,omitempty"`
-	Path        string            `json:"path"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	Body        json.RawMessage   `json:"body,omitempty"`
-	DelayMs     int               `json:"delay_ms,omitempty"`
-	DurationMs  int               `json:"duration_ms,omitempty"`
-	Assertions  *Assertions       `json:"assertions,omitempty"`
-	Description string            `json:"description,omitempty"`
+	ID           string            `json:"id"`
+	Action       string            `json:"action"`
+	Intent       string            `json:"intent,omitempty"`
+	Path         string            `json:"path"`
+	Headers      map[string]string `json:"headers,omitempty"`
+	Body         json.RawMessage   `json:"body,omitempty"`
+	DelayMs      int               `json:"delay_ms,omitempty"`
+	DurationMs   int               `json:"duration_ms,omitempty"`
+	Assertions   *Assertions       `json:"assertions,omitempty"`
+	Description  string            `json:"description,omitempty"`
+	ParallelWith string            `json:"parallel_with,omitempty"`
 }
 
 // Assertions defines expected outcomes for a step.

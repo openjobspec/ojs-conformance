@@ -1,0 +1,53 @@
+{
+  "name": "federation-weighted-routing",
+  "level": 4,
+  "description": "Enqueue a job with weighted routing metadata specifying traffic distribution percentages across regions. Verify the weight metadata is preserved.",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "analytics.compute",
+        "args": ["dataset-2026-q1"],
+        "queue": "analytics",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-ae6f-7012-bd45-def123456789",
+          "ojs.federation.region_affinity": "weighted",
+          "ojs.federation.source_region": "us-east-1",
+          "ojs.federation.weights": {
+            "us-east-1": 60,
+            "us-west-2": 30,
+            "eu-west-1": 10
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "analytics.compute",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "ojs.federation.federation_id": "01912e4a-ae6f-7012-bd45-def123456789",
+            "ojs.federation.region_affinity": "weighted",
+            "ojs.federation.weights.us-east-1": 60,
+            "ojs.federation.weights.us-west-2": 30,
+            "ojs.federation.weights.eu-west-1": 10
+          }
+        }
+      }
+    }
+  ]
+}

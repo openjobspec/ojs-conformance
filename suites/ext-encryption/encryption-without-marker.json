@@ -1,0 +1,54 @@
+{
+  "test_id": "EXT-ENC-005",
+  "level": 0,
+  "category": "ext-encryption",
+  "name": "encryption-without-marker",
+  "description": "Enqueue a job without the ojs_encoded marker. Verify the server treats args as plaintext and does not add any codec metadata.",
+  "spec_ref": "ojs-encryption#section-3",
+  "tags": ["extension", "encryption", "negative", "no-marker"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-plaintext",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.plaintext",
+        "args": [
+          "plain-text-data"
+        ],
+        "options": {
+          "queue": "conformance-encryption-plain"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available",
+          "$.job.args[0]": "plain-text-data"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "verify-no-codec-meta",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {
+        "Accept": "application/openjobspec+json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.args[0]": "plain-text-data",
+          "$.job.meta.ojs_encoded": { "$exists": false }
+        }
+      }
+    }
+  ]
+}

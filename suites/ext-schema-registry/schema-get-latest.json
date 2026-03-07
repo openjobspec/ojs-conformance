@@ -1,0 +1,48 @@
+{
+  "test_id": "EXT-SCH-002",
+  "level": 0,
+  "category": "ext-schema-registry",
+  "name": "schema-get-latest",
+  "description": "Register a schema and retrieve it via GET. Verify the returned schema matches what was registered.",
+  "spec_ref": "ojs-schema-registry#section-4",
+  "tags": ["extension", "schema-registry", "get", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "register",
+      "path": "/ojs/v1/admin/schemas/report.generate/1",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "schema": {
+          "type": "array",
+          "items": [
+            { "type": "string", "description": "report type" }
+          ]
+        }
+      },
+      "assertions": {
+        "status": { "$in": [200, 201] }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "get-latest",
+      "path": "/ojs/v1/admin/schemas/report.generate",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.type": "report.generate",
+          "$.schema.type": "array"
+        }
+      }
+    }
+  ]
+}

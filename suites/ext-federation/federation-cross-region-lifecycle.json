@@ -1,0 +1,77 @@
+{
+  "name": "federation-cross-region-lifecycle",
+  "level": 4,
+  "description": "Enqueue a cross-region federated job, fetch it, and ACK it. Verify federation metadata persists through the complete job lifecycle.",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "notification.send",
+        "args": ["usr_67890", "order_shipped"],
+        "queue": "notifications",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-e1a2-7345-e078-012345678901",
+          "ojs.federation.region_affinity": "affinity",
+          "ojs.federation.source_region": "ap-southeast-1",
+          "ojs.federation.target_region": "ap-northeast-1"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "notification.send",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "fetch",
+      "request": {
+        "queues": ["notifications"],
+        "worker_id": "worker-ap-northeast-1"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "jobs[0].type": "notification.send",
+          "jobs[0].state": "active",
+          "jobs[0].meta.ojs.federation.source_region": "ap-southeast-1",
+          "jobs[0].meta.ojs.federation.target_region": "ap-northeast-1"
+        }
+      }
+    },
+    {
+      "action": "ack",
+      "request": {
+        "id": "$ref.job_id",
+        "worker_id": "worker-ap-northeast-1"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "state": "completed"
+        }
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "state": "completed",
+          "meta": {
+            "ojs.federation.federation_id": "01912e4a-e1a2-7345-e078-012345678901",
+            "ojs.federation.source_region": "ap-southeast-1",
+            "ojs.federation.target_region": "ap-northeast-1"
+          }
+        }
+      }
+    }
+  ]
+}

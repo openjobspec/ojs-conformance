@@ -1,0 +1,51 @@
+{
+  "name": "federation-region-health",
+  "level": 4,
+  "description": "Enqueue a job with detailed region health metadata including latency and availability metrics. Verify the health metadata is preserved for monitoring and routing decisions.",
+  "steps": [
+    {
+      "action": "push",
+      "request": {
+        "type": "report.generate",
+        "args": ["monthly-report", "2026-02"],
+        "queue": "reports",
+        "meta": {
+          "ojs.federation.federation_id": "01912e4a-d091-7234-df67-f01234567890",
+          "ojs.federation.region_affinity": "latency-based",
+          "ojs.federation.source_region": "eu-west-1",
+          "ojs.federation.target_region": "eu-central-1",
+          "ojs.federation.routing_latency_ms": 12,
+          "ojs.federation.region_load": 0.65
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "type": "report.generate",
+          "state": "available"
+        }
+      },
+      "store": {
+        "job_id": "id"
+      }
+    },
+    {
+      "action": "get",
+      "request": {
+        "id": "$ref.job_id"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "ojs.federation.region_affinity": "latency-based",
+            "ojs.federation.source_region": "eu-west-1",
+            "ojs.federation.target_region": "eu-central-1",
+            "ojs.federation.routing_latency_ms": 12,
+            "ojs.federation.region_load": 0.65
+          }
+        }
+      }
+    }
+  ]
+}

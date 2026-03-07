@@ -1,0 +1,49 @@
+{
+  "test_id": "EXT-MT-007",
+  "level": 0,
+  "category": "ext-multi-tenancy",
+  "name": "multi-tenancy-batch-tenant",
+  "description": "Batch enqueue multiple jobs with a tenant header. Verify all jobs in the batch are assigned to the correct tenant.",
+  "spec_ref": "ojs-multi-tenancy#section-3",
+  "tags": ["extension", "multi-tenancy", "batch", "happy-path"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "batch-enqueue",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-OJS-Tenant": "tenant-batch-corp"
+      },
+      "body": {
+        "jobs": [
+          {
+            "type": "test.tenant.batch",
+            "args": ["batch-item-1"],
+            "options": { "queue": "conformance-tenant-batch" }
+          },
+          {
+            "type": "test.tenant.batch",
+            "args": ["batch-item-2"],
+            "options": { "queue": "conformance-tenant-batch" }
+          },
+          {
+            "type": "test.tenant.batch",
+            "args": ["batch-item-3"],
+            "options": { "queue": "conformance-tenant-batch" }
+          }
+        ]
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.jobs[0].meta.tenant_id": "tenant-batch-corp",
+          "$.jobs[1].meta.tenant_id": "tenant-batch-corp",
+          "$.jobs[2].meta.tenant_id": "tenant-batch-corp"
+        }
+      }
+    }
+  ]
+}
