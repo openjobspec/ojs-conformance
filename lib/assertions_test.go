@@ -690,3 +690,4 @@ func TestJsonType(t *testing.T) {
 		}
 	}
 }
+
