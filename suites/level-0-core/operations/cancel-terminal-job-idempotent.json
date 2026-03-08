@@ -115,7 +115,9 @@
               }
             },
             {
-              "$.error.code": "invalid_request",
+              "$.error.code": {
+                "$in": ["invalid_request", "conflict"]
+              },
               "$.error.message": {
                 "$exists": true
               }

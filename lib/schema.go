@@ -3,22 +3,60 @@ package lib
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 // TestCase represents a single conformance test loaded from a JSON file.
 type TestCase struct {
-	TestID      string   `json:"test_id"`
-	Level       int      `json:"level"`
-	Category    string   `json:"category"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	SpecRef     string   `json:"spec_ref"`
-	Tags        []string `json:"tags"`
-	Setup       *Setup   `json:"setup,omitempty"`
-	Steps       []Step   `json:"steps"`
-	Teardown    *Setup   `json:"teardown,omitempty"`
-	FilePath    string   `json:"-"` // populated by the runner, not from JSON
+	TestID      string          `json:"test_id"`
+	Level       json.RawMessage `json:"level"`
+	Category    string          `json:"category"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	SpecRef     string          `json:"spec_ref"`
+	Tags        []string        `json:"tags"`
+	Setup       *Setup          `json:"setup,omitempty"`
+	Steps       []Step          `json:"steps"`
+	Teardown    *Setup          `json:"teardown,omitempty"`
+	FilePath    string          `json:"-"`
+
+	LevelInt int `json:"-"` // parsed from Level after unmarshaling
+}
+
+// ParseLevel extracts the integer level from the raw JSON value,
+// handling both int and string representations. Extension suites
+// use "ext" which maps to level 99.
+func (tc *TestCase) ParseLevel() (int, error) {
+	if len(tc.Level) == 0 {
+		return 0, nil
+	}
+
+	// Try int
+	var n int
+	if err := json.Unmarshal(tc.Level, &n); err == nil {
+		tc.LevelInt = n
+		return n, nil
+	}
+
+	// Try string
+	var str string
+	if err := json.Unmarshal(tc.Level, &str); err == nil {
+		if str == "ext" || str == "extension" {
+			tc.LevelInt = 99
+			return 99, nil
+		}
+		n, err := strconv.Atoi(str)
+		if err != nil {
+			return 0, fmt.Errorf("level string %q is not a number", str)
+		}
+		tc.LevelInt = n
+		return n, nil
+	}
+
+	return 0, fmt.Errorf("cannot parse level from %s", strings.TrimSpace(string(tc.Level)))
 }
 
 // Setup contains optional setup or teardown configuration.
@@ -47,13 +85,94 @@ type Assertions struct {
 	StatusIn     []int                      `json:"status_in,omitempty"`
 	Body         map[string]json.RawMessage `json:"body,omitempty"`
 	BodyAbsent   []string                   `json:"body_absent,omitempty"`
-	Headers      map[string]string          `json:"headers,omitempty"`
+	Headers      json.RawMessage            `json:"headers,omitempty"`
 	TimingMs     *TimingAssertion           `json:"timing_ms,omitempty"`
 	BodyRaw      json.RawMessage            `json:"body_raw,omitempty"`
 	BodyContains []string                   `json:"body_contains,omitempty"`
 }
 
-// TimingAssertion validates response time.
+// ParsedHeaders returns headers as simple string map, extracting $match values
+// from object-format headers. This handles both:
+//
+//	"headers": {"Content-Type": "application/json"}                     (simple)
+//	"headers": {"Content-Type": {"$match": "application/(openjobspec\\+)?json"}}  (advanced)
+func (a *Assertions) ParsedHeaders() map[string]string {
+	if len(a.Headers) == 0 {
+		return nil
+	}
+	result := make(map[string]string)
+
+	// Try simple map[string]string first
+	var simple map[string]string
+	if err := json.Unmarshal(a.Headers, &simple); err == nil {
+		return simple
+	}
+
+	// Fall back to map[string]object with $match
+	var complex map[string]json.RawMessage
+	if err := json.Unmarshal(a.Headers, &complex); err == nil {
+		for key, val := range complex {
+			var strVal string
+			if json.Unmarshal(val, &strVal) == nil {
+				result[key] = strVal
+				continue
+			}
+			var objVal map[string]string
+			if json.Unmarshal(val, &objVal) == nil {
+				if m, ok := objVal["$match"]; ok {
+					result[key] = m
+				} else if e, ok := objVal["$eq"]; ok {
+					result[key] = e
+				}
+			}
+		}
+	}
+	return result
+}
+
+// HeaderMatcher represents a header assertion with optional regex support.
+type HeaderMatcher struct {
+	Value   string
+	IsRegex bool
+}
+
+// ParsedHeaderMatchers returns header matchers that distinguish exact vs regex patterns.
+func (a *Assertions) ParsedHeaderMatchers() map[string]HeaderMatcher {
+	if len(a.Headers) == 0 {
+		return nil
+	}
+	result := make(map[string]HeaderMatcher)
+
+	// Try simple map[string]string first
+	var simple map[string]string
+	if err := json.Unmarshal(a.Headers, &simple); err == nil {
+		for k, v := range simple {
+			result[k] = HeaderMatcher{Value: v, IsRegex: false}
+		}
+		return result
+	}
+
+	// Fall back to map[string]object with $match/$eq
+	var complex map[string]json.RawMessage
+	if err := json.Unmarshal(a.Headers, &complex); err == nil {
+		for key, val := range complex {
+			var strVal string
+			if json.Unmarshal(val, &strVal) == nil {
+				result[key] = HeaderMatcher{Value: strVal, IsRegex: false}
+				continue
+			}
+			var objVal map[string]string
+			if json.Unmarshal(val, &objVal) == nil {
+				if m, ok := objVal["$match"]; ok {
+					result[key] = HeaderMatcher{Value: m, IsRegex: true}
+				} else if e, ok := objVal["$eq"]; ok {
+					result[key] = HeaderMatcher{Value: e, IsRegex: false}
+				}
+			}
+		}
+	}
+	return result
+}
 type TimingAssertion struct {
 	LessThan    *int `json:"less_than,omitempty"`
 	GreaterThan *int `json:"greater_than,omitempty"`

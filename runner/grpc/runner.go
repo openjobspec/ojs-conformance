@@ -39,6 +39,9 @@ func loadTests(dir string) ([]lib.TestCase, error) {
 			return fmt.Errorf("parsing %s: %w", path, err)
 		}
 		tc.FilePath = path
+		if _, err := tc.ParseLevel(); err != nil {
+			return fmt.Errorf("parsing %s: level: %w", path, err)
+		}
 		tests = append(tests, tc)
 		return nil
 	})
@@ -54,7 +57,7 @@ func loadTests(dir string) ([]lib.TestCase, error) {
 func filterTests(tests []lib.TestCase, level int, category, testID string) []lib.TestCase {
 	var filtered []lib.TestCase
 	for _, tc := range tests {
-		if level >= 0 && tc.Level != level {
+		if level >= 0 && tc.LevelInt != level {
 			continue
 		}
 		if category != "" && tc.Category != category {
@@ -74,7 +77,7 @@ func runTest(tc lib.TestCase, client *OJSClient, rpcTimeout time.Duration, timin
 	result := lib.TestResult{
 		TestID:   tc.TestID,
 		Name:     tc.Name,
-		Level:    tc.Level,
+		Level:    tc.LevelInt,
 		Category: tc.Category,
 		SpecRef:  tc.SpecRef,
 		FilePath: tc.FilePath,

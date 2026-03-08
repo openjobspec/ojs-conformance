@@ -86,7 +86,7 @@
         "status": 200,
         "body": {
           "$.acknowledged": true,
-          "$.job_id": "{{steps.step-1.response.body.job.id}}",
+          "$.id": "{{steps.step-1.response.body.job.id}}",
           "$.state": "completed",
           "$.completed_at": {
             "$exists": true,

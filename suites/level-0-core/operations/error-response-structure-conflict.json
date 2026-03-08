@@ -39,7 +39,7 @@
         "Content-Type": "application/openjobspec+json"
       },
       "body": {
-        "job_id": "${job_id}"
+        "job_id": "{{steps.step-1.response.body.job.id}}"
       },
       "assertions": {
         "status": 409,

@@ -49,6 +49,7 @@ func main() {
 		tolerancePct float64
 		timeoutSec   int
 		redisURL     string
+		resetURL     string
 	)
 
 	flag.StringVar(&baseURL, "url", "http://localhost:8080", "Base URL of the OJS-conformant server")
@@ -61,6 +62,7 @@ func main() {
 	flag.Float64Var(&tolerancePct, "tolerance", 50, "Timing tolerance percentage")
 	flag.IntVar(&timeoutSec, "timeout", 30, "HTTP request timeout in seconds")
 	flag.StringVar(&redisURL, "redis", "", "Redis URL for FLUSHDB between tests (e.g., redis://localhost:6379)")
+	flag.StringVar(&resetURL, "reset-url", "", "HTTP URL to POST for state reset between tests (e.g., http://localhost:8090/ojs/v1/admin/reset)")
 	flag.Parse()
 
 	// Normalize base URL
@@ -116,6 +118,13 @@ func main() {
 		if redisClient != nil {
 			redisClient.FlushDB(context.Background())
 		}
+		// HTTP-based reset for non-Redis backends
+		if resetURL != "" {
+			req, _ := http.NewRequest(http.MethodPost, resetURL, nil)
+			if resp, err := client.Do(req); err == nil {
+				resp.Body.Close()
+			}
+		}
 		result := runTest(tc, baseURL, client, timingCfg, verbose)
 		results = append(results, result)
 	}
@@ -163,6 +172,9 @@ func loadTests(dir string) ([]lib.TestCase, error) {
 			return fmt.Errorf("parsing %s: %w", path, err)
 		}
 		tc.FilePath = path
+		if _, err := tc.ParseLevel(); err != nil {
+			return fmt.Errorf("parsing %s: level: %w", path, err)
+		}
 		tests = append(tests, tc)
 		return nil
 	})
@@ -179,7 +191,7 @@ func loadTests(dir string) ([]lib.TestCase, error) {
 func filterTests(tests []lib.TestCase, level int, category, testID string) []lib.TestCase {
 	var filtered []lib.TestCase
 	for _, tc := range tests {
-		if level >= 0 && tc.Level != level {
+		if level >= 0 && tc.LevelInt != level {
 			continue
 		}
 		if category != "" && tc.Category != category {
@@ -199,7 +211,7 @@ func runTest(tc lib.TestCase, baseURL string, client *http.Client, timingCfg lib
 	result := lib.TestResult{
 		TestID:   tc.TestID,
 		Name:     tc.Name,
-		Level:    tc.Level,
+		Level:    tc.LevelInt,
 		Category: tc.Category,
 		SpecRef:  tc.SpecRef,
 		FilePath: tc.FilePath,
@@ -555,16 +567,24 @@ func evaluateAssertions(step lib.Step, sr *lib.StepResult, stepResults map[strin
 	}
 
 	// Header assertions
-	if a.Headers != nil {
-		for key, expected := range a.Headers {
+	if headerMatchers := a.ParsedHeaderMatchers(); len(headerMatchers) > 0 {
+		for key, hm := range headerMatchers {
 			actual := sr.Headers.Get(key)
-			if actual != expected {
+			matched := false
+			if hm.IsRegex {
+				if re, err := regexp.Compile(hm.Value); err == nil {
+					matched = re.MatchString(actual)
+				}
+			} else {
+				matched = actual == hm.Value
+			}
+			if !matched {
 				failures = append(failures, lib.Failure{
 					StepID:   step.ID,
 					Field:    fmt.Sprintf("header:%s", key),
-					Expected: expected,
+					Expected: hm.Value,
 					Actual:   actual,
-					Message:  fmt.Sprintf("Expected header %q=%q, got %q", key, expected, actual),
+					Message:  fmt.Sprintf("Expected header %q=%q, got %q", key, hm.Value, actual),
 				})
 			}
 		}
