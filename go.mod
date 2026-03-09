@@ -7,7 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/openjobspec/ojs-proto v0.0.0
 	github.com/redis/go-redis/v9 v9.17.3
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11
 )
 
