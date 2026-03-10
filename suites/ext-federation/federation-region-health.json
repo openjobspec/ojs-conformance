@@ -1,13 +1,24 @@
 {
-  "name": "federation-region-health",
+  "test_id": "EXT-FED-006",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-region-health",
   "description": "Enqueue a job with detailed region health metadata including latency and availability metrics. Verify the health metadata is preserved for monitoring and routing decisions.",
+  "spec_ref": "ojs-federation#section-4",
+  "tags": [
+    "extension",
+    "federation",
+    "health"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "report.generate",
-        "args": ["monthly-report", "2026-02"],
+        "args": [
+          "monthly-report",
+          "2026-02"
+        ],
         "queue": "reports",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-d091-7234-df67-f01234567890",

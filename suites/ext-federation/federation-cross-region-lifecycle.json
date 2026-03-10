@@ -1,13 +1,24 @@
 {
-  "name": "federation-cross-region-lifecycle",
+  "test_id": "EXT-FED-003",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-cross-region-lifecycle",
   "description": "Enqueue a cross-region federated job, fetch it, and ACK it. Verify federation metadata persists through the complete job lifecycle.",
+  "spec_ref": "ojs-federation#section-5",
+  "tags": [
+    "extension",
+    "federation",
+    "cross-region"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "notification.send",
-        "args": ["usr_67890", "order_shipped"],
+        "args": [
+          "usr_67890",
+          "order_shipped"
+        ],
         "queue": "notifications",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-e1a2-7345-e078-012345678901",
@@ -30,7 +41,9 @@
     {
       "action": "fetch",
       "request": {
-        "queues": ["notifications"],
+        "queues": [
+          "notifications"
+        ],
         "worker_id": "worker-ap-northeast-1"
       },
       "expect": {

@@ -1,13 +1,23 @@
 {
-  "name": "federation-affinity",
+  "test_id": "EXT-FED-001",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-affinity",
   "description": "Enqueue a geo-pinned job with regional affinity constraints and verify region metadata is preserved",
+  "spec_ref": "ojs-federation#section-3",
+  "tags": [
+    "extension",
+    "federation",
+    "affinity"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "user.data.export",
-        "args": ["usr_12345"],
+        "args": [
+          "usr_12345"
+        ],
         "queue": "gdpr-exports",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-9d5e-7f01-ac34-cdef12345678",

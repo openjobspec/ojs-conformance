@@ -1,13 +1,24 @@
 {
-  "name": "federation-no-metadata",
+  "test_id": "EXT-FED-005",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-no-metadata",
   "description": "Enqueue a standard job without any federation metadata. Verify the server accepts it normally and no federation fields are injected.",
+  "spec_ref": "ojs-federation#section-6",
+  "tags": [
+    "extension",
+    "federation",
+    "metadata"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "email.send",
-        "args": ["user@example.com", "hello"],
+        "args": [
+          "user@example.com",
+          "hello"
+        ],
         "queue": "default"
       },
       "expect": {

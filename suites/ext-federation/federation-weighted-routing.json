@@ -1,13 +1,23 @@
 {
-  "name": "federation-weighted-routing",
+  "test_id": "EXT-FED-008",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-weighted-routing",
   "description": "Enqueue a job with weighted routing metadata specifying traffic distribution percentages across regions. Verify the weight metadata is preserved.",
+  "spec_ref": "ojs-federation#section-3",
+  "tags": [
+    "extension",
+    "federation",
+    "weighted-routing"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "analytics.compute",
-        "args": ["dataset-2026-q1"],
+        "args": [
+          "dataset-2026-q1"
+        ],
         "queue": "analytics",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-ae6f-7012-bd45-def123456789",

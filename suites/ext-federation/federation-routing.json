@@ -1,13 +1,24 @@
 {
-  "name": "federation-routing",
+  "test_id": "EXT-FED-007",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-routing",
   "description": "Enqueue a job with federation routing metadata and verify cross-region attributes are stored",
+  "spec_ref": "ojs-federation#section-3",
+  "tags": [
+    "extension",
+    "federation",
+    "routing"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "email.send",
-        "args": ["user@example.com", "welcome"],
+        "args": [
+          "user@example.com",
+          "welcome"
+        ],
         "queue": "email",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-7b3c-7def-8a12-abcdef123456",

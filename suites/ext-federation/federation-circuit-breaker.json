@@ -1,13 +1,24 @@
 {
-  "name": "federation-circuit-breaker",
+  "test_id": "EXT-FED-002",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-circuit-breaker",
   "description": "Enqueue a job with circuit breaker metadata indicating the target region's health status. Verify the circuit breaker metadata is preserved for routing decisions.",
+  "spec_ref": "ojs-federation#section-4.3",
+  "tags": [
+    "extension",
+    "federation",
+    "circuit-breaker"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "payment.process",
-        "args": ["txn_abc123", 99.99],
+        "args": [
+          "txn_abc123",
+          99.99
+        ],
         "queue": "payments",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-bf80-7123-ce56-ef1234567890",

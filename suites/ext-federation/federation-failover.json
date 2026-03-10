@@ -1,13 +1,24 @@
 {
-  "name": "federation-failover",
+  "test_id": "EXT-FED-004",
   "level": 4,
+  "category": "ext-federation",
+  "name": "federation-failover",
   "description": "Enqueue a job with overflow routing for region failover scenarios and verify metadata persistence",
+  "spec_ref": "ojs-federation#section-7",
+  "tags": [
+    "extension",
+    "federation",
+    "failover"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "video.transcode",
-        "args": ["/input/video.mp4", "1080p"],
+        "args": [
+          "/input/video.mp4",
+          "1080p"
+        ],
         "queue": "transcode",
         "meta": {
           "ojs.federation.federation_id": "01912e4a-8c4d-7ef0-9b23-bcdef1234567",
