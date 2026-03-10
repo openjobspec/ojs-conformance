@@ -67,6 +67,11 @@ var routeTable = []RouteMapping{
 	{HTTPAction: "POST", PathPrefix: "/ojs/v1/workflows", RPCMethod: "CreateWorkflow", Exact: true},
 	{HTTPAction: "GET", PathPrefix: "/ojs/v1/workflows/", RPCMethod: "GetWorkflow"},
 	{HTTPAction: "DELETE", PathPrefix: "/ojs/v1/workflows/", RPCMethod: "CancelWorkflow"},
+
+	// --- Durable Execution (Checkpoints) ---
+	{HTTPAction: "PUT", PathPrefix: "/ojs/v1/jobs/", RPCMethod: "SaveCheckpoint"},
+	{HTTPAction: "GET", PathPrefix: "/ojs/v1/jobs/", RPCMethod: "GetCheckpointOrJob"},
+	{HTTPAction: "DELETE", PathPrefix: "/ojs/v1/jobs/", RPCMethod: "DeleteCheckpointOrCancel"},
 }
 
 // ResolveRoute finds the gRPC method name for an HTTP action + path pair.

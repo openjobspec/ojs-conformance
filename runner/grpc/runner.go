@@ -176,6 +176,25 @@ func executeStep(step lib.Step, client *OJSClient, rpcTimeout time.Duration, ste
 		}
 	}
 
+	// Handle checkpoint vs job disambiguation for /ojs/v1/jobs/{id}/checkpoint
+	if method == "SaveCheckpoint" && !strings.HasSuffix(path, "/checkpoint") {
+		method = "" // Not a checkpoint path; no PUT on jobs
+	}
+	if method == "GetCheckpointOrJob" {
+		if strings.HasSuffix(path, "/checkpoint") {
+			method = "GetCheckpoint"
+		} else {
+			method = "GetJob"
+		}
+	}
+	if method == "DeleteCheckpointOrCancel" {
+		if strings.HasSuffix(path, "/checkpoint") {
+			method = "DeleteCheckpoint"
+		} else {
+			method = "CancelJob"
+		}
+	}
+
 	// Execute RPC
 	ctx, cancel := context.WithTimeout(context.Background(), rpcTimeout)
 	defer cancel()
