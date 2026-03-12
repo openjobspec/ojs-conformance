@@ -1,0 +1,52 @@
+{
+  "test_id": "EXT-FS-003",
+  "level": "ext",
+  "category": "fair-scheduling",
+  "name": "fair-scheduling-round-robin",
+  "description": "When multiple queues have equal weight, fair scheduling MUST distribute fetch results across queues in a round-robin or proportionally fair manner rather than always draining one queue first.",
+  "spec_ref": "ojs-fair-scheduling#section-4",
+  "tags": ["ext", "fair-scheduling", "round-robin", "multi-queue"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue 3 jobs to queue-a",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "jobs": [
+          {"type": "test.fs.rr", "args": [{"q": "a", "n": 1}], "options": {"queue": "fs-rr-a"}},
+          {"type": "test.fs.rr", "args": [{"q": "a", "n": 2}], "options": {"queue": "fs-rr-a"}},
+          {"type": "test.fs.rr", "args": [{"q": "a", "n": 3}], "options": {"queue": "fs-rr-a"}}
+        ]
+      },
+      "assertions": {"status": 201}
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue 3 jobs to queue-b",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "jobs": [
+          {"type": "test.fs.rr", "args": [{"q": "b", "n": 1}], "options": {"queue": "fs-rr-b"}},
+          {"type": "test.fs.rr", "args": [{"q": "b", "n": 2}], "options": {"queue": "fs-rr-b"}},
+          {"type": "test.fs.rr", "args": [{"q": "b", "n": 3}], "options": {"queue": "fs-rr-b"}}
+        ]
+      },
+      "assertions": {"status": 201}
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "fetch from both queues — fair scheduling should mix results",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {"queues": ["fs-rr-a", "fs-rr-b"], "count": 4, "worker_id": "test-fs-worker"},
+      "assertions": {
+        "status": 200
+      }
+    }
+  ]
+}

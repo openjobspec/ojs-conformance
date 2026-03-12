@@ -1,13 +1,25 @@
 {
-  "name": "ml-gpu-affinity",
+  "test_id": "EXT-ML-002",
   "level": 4,
+  "category": "ext-ml-resources",
+  "name": "ml-gpu-affinity",
   "description": "Enqueue a job with GPU requirements and node affinity rules",
+  "spec_ref": "ojs-ml-extensions#section-7",
+  "tags": [
+    "extension",
+    "ml-resources",
+    "gpu"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "ml.train",
-        "args": [{"task": "fine-tune-model"}],
+        "args": [
+          {
+            "task": "fine-tune-model"
+          }
+        ],
         "queue": "gpu-training",
         "ext_ml_accelerator": "gpu",
         "ext_ml_gpu_type": "nvidia-a100",
@@ -20,14 +32,19 @@
             {
               "key": "gpu.nvidia.com/class",
               "operator": "In",
-              "values": ["A100", "H100"]
+              "values": [
+                "A100",
+                "H100"
+              ]
             }
           ],
           "preferred": [
             {
               "key": "topology.kubernetes.io/zone",
               "operator": "In",
-              "values": ["us-east-1a"],
+              "values": [
+                "us-east-1a"
+              ],
               "weight": 80
             }
           ]
@@ -64,14 +81,19 @@
               {
                 "key": "gpu.nvidia.com/class",
                 "operator": "In",
-                "values": ["A100", "H100"]
+                "values": [
+                  "A100",
+                  "H100"
+                ]
               }
             ],
             "preferred": [
               {
                 "key": "topology.kubernetes.io/zone",
                 "operator": "In",
-                "values": ["us-east-1a"],
+                "values": [
+                  "us-east-1a"
+                ],
                 "weight": 80
               }
             ]

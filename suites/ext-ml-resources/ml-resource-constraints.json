@@ -1,13 +1,25 @@
 {
-  "name": "ml-resource-constraints",
+  "test_id": "EXT-ML-004",
   "level": 4,
+  "category": "ext-ml-resources",
+  "name": "ml-resource-constraints",
   "description": "Verify ML resource constraints including memory, storage, CPU, and checkpointing are stored and returned",
+  "spec_ref": "ojs-ml-extensions#section-7",
+  "tags": [
+    "extension",
+    "ml-resources",
+    "constraints"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "ml.train",
-        "args": [{"task": "distributed-training"}],
+        "args": [
+          {
+            "task": "distributed-training"
+          }
+        ],
         "queue": "gpu-training",
         "ext_ml_accelerator": "gpu",
         "ext_ml_gpu_type": "nvidia-h100",

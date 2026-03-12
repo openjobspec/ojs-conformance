@@ -1,0 +1,37 @@
+{
+  "test_id": "EXT-BP-005",
+  "level": "ext",
+  "category": "backpressure",
+  "name": "backpressure-batch-partial-reject",
+  "description": "When a batch enqueue would exceed the queue's depth bound, the backend MUST reject the entire batch or accept only the jobs that fit within the limit, returning appropriate partial success or failure status.",
+  "spec_ref": "ojs-backpressure#section-7.3",
+  "tags": ["ext", "backpressure", "batch", "partial-reject"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "configure queue with tight depth bound",
+      "path": "/ojs/v1/admin/queues/bp-batch-test/config",
+      "headers": {"Content-Type": "application/json"},
+      "body": {"backpressure": {"max_depth": 1, "strategy": "reject"}},
+      "assertions": {"status": 200}
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "batch enqueue 3 jobs into queue with max_depth=1",
+      "path": "/ojs/v1/jobs/batch",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "jobs": [
+          {"type": "test.bp.batch", "args": [1], "options": {"queue": "bp-batch-test"}},
+          {"type": "test.bp.batch", "args": [2], "options": {"queue": "bp-batch-test"}},
+          {"type": "test.bp.batch", "args": [3], "options": {"queue": "bp-batch-test"}}
+        ]
+      },
+      "assertions": {
+        "status_in": [201, 207, 429]
+      }
+    }
+  ]
+}

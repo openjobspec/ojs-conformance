@@ -1,0 +1,23 @@
+{
+  "test_id": "EXT-OBS-004",
+  "level": "ext",
+  "category": "observability",
+  "name": "observability-ready-endpoint",
+  "description": "The /ready endpoint MUST return 200 when the backend is ready to accept requests, or 503 when it is not ready. This endpoint is distinct from /health and is used by load balancers.",
+  "spec_ref": "ojs-observability#section-5",
+  "tags": ["ext", "observability", "ready", "health"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "check readiness endpoint",
+      "path": "/ready",
+      "assertions": {
+        "status_in": [200, 503],
+        "body": {
+          "$.status": {"$exists": true}
+        }
+      }
+    }
+  ]
+}

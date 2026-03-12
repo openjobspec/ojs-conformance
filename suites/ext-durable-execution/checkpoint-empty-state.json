@@ -1,0 +1,42 @@
+{
+  "test_id": "EXT-DUR-014",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-empty-state",
+  "description": "A checkpoint with an empty state object should be accepted and retrievable. Empty state is a valid signal meaning 'started but no progress yet'.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "edge-case", "empty-state"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.empty_state",
+        "args": ["empty-state-test"],
+        "options": { "queue": "conformance-durable-empty" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "save-empty-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": {} },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "retrieve-empty-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.sequence": 1
+      }
+    }
+  ]
+}

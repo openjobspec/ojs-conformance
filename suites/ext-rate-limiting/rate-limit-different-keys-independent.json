@@ -1,0 +1,52 @@
+{
+  "test_id": "EXT-RL-005",
+  "level": "ext",
+  "category": "rate-limiting",
+  "name": "rate-limit-different-keys-independent",
+  "description": "Rate limits with different keys MUST be tracked independently. Exhausting one key's limit MUST NOT affect jobs with a different key.",
+  "spec_ref": "ojs-rate-limiting#section-5.3",
+  "tags": ["ext", "rate-limiting", "independent-keys"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue job with key-A",
+      "path": "/ojs/v1/jobs",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "type": "test.ratelimit.keys",
+        "args": [{"key": "A"}],
+        "options": {
+          "queue": "rl-keys-test",
+          "rate_limit": {"key": "rl-key-a", "concurrency": 1}
+        }
+      },
+      "assertions": {"status": 201}
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue job with different key-B (should succeed independently)",
+      "path": "/ojs/v1/jobs",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "type": "test.ratelimit.keys",
+        "args": [{"key": "B"}],
+        "options": {
+          "queue": "rl-keys-test",
+          "rate_limit": {"key": "rl-key-b", "concurrency": 1}
+        }
+      },
+      "assertions": {"status": 201, "body": {"$.job.id": {"$exists": true}}}
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "fetch jobs — both should be fetchable since keys are independent",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {"queues": ["rl-keys-test"], "count": 2, "worker_id": "test-rl-keys-worker"},
+      "assertions": {"status": 200}
+    }
+  ]
+}

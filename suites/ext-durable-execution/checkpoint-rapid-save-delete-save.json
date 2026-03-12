@@ -1,0 +1,73 @@
+{
+  "test_id": "EXT-DUR-019",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-rapid-save-delete-save",
+  "description": "Rapid sequence of save → delete → save must work atomically. After the final save, the checkpoint must exist with sequence 1 (reset after delete).",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "chaos", "rapid-ops"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.rapid_ops",
+        "args": ["rapid-ops-test"],
+        "options": { "queue": "conformance-durable-rapid" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "save-first",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "phase": "first" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "save-second",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "phase": "second" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "DELETE",
+      "intent": "delete-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-5",
+      "action": "GET",
+      "intent": "verify-deleted",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": { "status": 404 }
+    },
+    {
+      "id": "step-6",
+      "action": "PUT",
+      "intent": "save-after-delete",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "phase": "after-delete" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "intent": "verify-new-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.phase": "after-delete",
+        "body.sequence": 1
+      }
+    }
+  ]
+}

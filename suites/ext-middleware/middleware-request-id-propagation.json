@@ -1,0 +1,45 @@
+{
+  "test_id": "EXT-MW-003",
+  "level": 0,
+  "category": "ext-middleware",
+  "name": "middleware-request-id-propagation",
+  "description": "Server-side middleware MUST propagate the X-Request-ID header through to the job metadata. If a client provides a request ID, it SHOULD appear in the job's meta when retrieved.",
+  "spec_ref": "ojs-middleware#section-4",
+  "tags": ["extension", "middleware", "request-id", "propagation"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue with custom request ID",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json",
+        "X-Request-ID": "req-mw-test-12345"
+      },
+      "body": {
+        "type": "test.middleware.reqid",
+        "args": [{"action": "test-request-id"}],
+        "options": {"queue": "conformance-middleware"}
+      },
+      "assertions": {
+        "status": 201,
+        "body": {"$.job.id": {"$exists": true}}
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "verify request ID in job response headers",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {"Accept": "application/openjobspec+json"},
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.type": "test.middleware.reqid"
+        }
+      }
+    }
+  ]
+}

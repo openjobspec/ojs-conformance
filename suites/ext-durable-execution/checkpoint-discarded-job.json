@@ -1,0 +1,68 @@
+{
+  "test_id": "EXT-DUR-021",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-discarded-job",
+  "description": "Saving a checkpoint for a discarded (dead-lettered) job should fail. Discarded is a terminal state where checkpoint operations are invalid.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "chaos", "terminal-state", "discarded"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-with-no-retries",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.discard",
+        "args": ["discard-checkpoint-test"],
+        "options": {
+          "queue": "conformance-durable-discard",
+          "retry": { "max_attempts": 1 }
+        }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "body": { "queues": ["conformance-durable-discard"], "worker_id": "w-discard-1" },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "nack-to-exhaust-retries",
+      "path": "/ojs/v1/workers/nack",
+      "body": {
+        "job_id": "${job_id}",
+        "worker_id": "w-discard-1",
+        "error": { "code": "handler_error", "message": "Fatal failure", "retryable": true }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "WAIT",
+      "duration_ms": 500,
+      "description": "Wait for job to reach discarded state"
+    },
+    {
+      "id": "step-5",
+      "action": "GET",
+      "intent": "verify-job-discarded",
+      "path": "/ojs/v1/jobs/${job_id}",
+      "expect": { "status": 200, "body.job.state": "discarded" }
+    },
+    {
+      "id": "step-6",
+      "action": "PUT",
+      "intent": "attempt-save-on-discarded-job",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "should_not": "be_saved" } },
+      "expect": { "status": 409 }
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "test_id": "EXT-DUR-020",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-multi-attempt-progression",
+  "description": "Simulate a job that progresses through multiple retry attempts, saving checkpoints at each stage. Verify that each retry can access the checkpoint from the previous attempt and that the sequence continues monotonically.",
+  "spec_ref": "ojs-durable-execution#section-6",
+  "tags": ["extension", "durable-execution", "checkpoint", "chaos", "multi-attempt", "progression"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-with-retry",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.multi_attempt",
+        "args": ["multi-attempt-progression"],
+        "options": {
+          "queue": "conformance-durable-multi",
+          "retry": { "max_attempts": 5, "initial_interval": "PT1S" }
+        }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch-attempt-1",
+      "path": "/ojs/v1/workers/fetch",
+      "body": { "queues": ["conformance-durable-multi"], "worker_id": "w-multi-1" },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "checkpoint-at-25pct",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "progress_pct": 25, "attempt": 1 } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "intent": "nack-attempt-1",
+      "path": "/ojs/v1/workers/nack",
+      "body": {
+        "job_id": "${job_id}",
+        "worker_id": "w-multi-1",
+        "error": { "code": "handler_error", "message": "Simulated crash at 25%", "retryable": true }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-5",
+      "action": "WAIT",
+      "duration_ms": 1500,
+      "description": "Wait for retry promotion"
+    },
+    {
+      "id": "step-6",
+      "action": "POST",
+      "intent": "fetch-attempt-2",
+      "path": "/ojs/v1/workers/fetch",
+      "body": { "queues": ["conformance-durable-multi"], "worker_id": "w-multi-2" },
+      "expect": { "status": 200, "body.jobs[0].attempt": 2 }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "intent": "verify-checkpoint-from-attempt-1",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.progress_pct": 25,
+        "body.state.attempt": 1
+      }
+    },
+    {
+      "id": "step-8",
+      "action": "PUT",
+      "intent": "checkpoint-at-75pct",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "progress_pct": 75, "attempt": 2 } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-9",
+      "action": "POST",
+      "intent": "ack-attempt-2",
+      "path": "/ojs/v1/workers/ack",
+      "body": {
+        "job_id": "${job_id}",
+        "worker_id": "w-multi-2",
+        "result": { "progress_pct": 100, "status": "completed_on_retry" }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-10",
+      "action": "GET",
+      "intent": "verify-final-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.progress_pct": 75,
+        "body.state.attempt": 2,
+        "body.sequence": 2
+      }
+    }
+  ]
+}

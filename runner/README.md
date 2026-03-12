@@ -4,7 +4,7 @@ A Go-based HTTP test runner that validates OJS (Open Job Spec) implementations a
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.24+
 - An OJS-conformant server running and accessible via HTTP
 
 ## Building

@@ -1,0 +1,47 @@
+{
+  "test_id": "EXT-BP-004",
+  "level": "ext",
+  "category": "backpressure",
+  "name": "backpressure-queue-stats-depth",
+  "description": "When backpressure is configured on a queue, the queue stats endpoint MUST report the current depth and configured max_depth so clients can make informed decisions.",
+  "spec_ref": "ojs-backpressure#section-8",
+  "tags": ["ext", "backpressure", "stats", "depth"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "PUT",
+      "intent": "configure queue with depth bound",
+      "path": "/ojs/v1/admin/queues/bp-stats-test/config",
+      "headers": {"Content-Type": "application/json"},
+      "body": {"backpressure": {"max_depth": 10, "strategy": "reject"}},
+      "assertions": {"status": 200}
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "enqueue a job to create some depth",
+      "path": "/ojs/v1/jobs",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "type": "test.bp.stats",
+        "args": [{"n": 1}],
+        "options": {"queue": "bp-stats-test"}
+      },
+      "assertions": {"status": 201}
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "check queue stats report depth info",
+      "path": "/ojs/v1/queues/bp-stats-test/stats",
+      "headers": {"Accept": "application/json"},
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.stats.depth": "number:positive",
+          "$.stats.queue": "bp-stats-test"
+        }
+      }
+    }
+  ]
+}

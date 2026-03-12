@@ -1,13 +1,25 @@
 {
-  "name": "ml-compute-constraints",
+  "test_id": "EXT-ML-001",
   "level": 4,
+  "category": "ext-ml-resources",
+  "name": "ml-compute-constraints",
   "description": "Verify ML compute constraints are stored and returned",
+  "spec_ref": "ojs-ml-extensions#section-7",
+  "tags": [
+    "extension",
+    "ml-resources",
+    "compute"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "ml.generate",
-        "args": [{"prompt": "Generate text"}],
+        "args": [
+          {
+            "prompt": "Generate text"
+          }
+        ],
         "queue": "default",
         "ext_ml_max_tokens": 4096,
         "ext_ml_max_batch_size": 32,

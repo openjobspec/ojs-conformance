@@ -1,0 +1,63 @@
+{
+  "test_id": "EXT-DUR-018",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-timeout-during-save",
+  "description": "A checkpoint save that takes too long should timeout gracefully. The previous checkpoint (if any) must remain intact and the job must stay in its current state.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "timeout", "chaos"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.timeout",
+        "args": ["timeout-save-test"],
+        "options": { "queue": "conformance-durable-timeout" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "save-initial-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": "initial", "count": 1 } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "GET",
+      "intent": "verify-initial-checkpoint-saved",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.step": "initial",
+        "body.sequence": 1
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "PUT",
+      "intent": "save-second-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": "second", "count": 2 } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-5",
+      "action": "GET",
+      "intent": "verify-second-checkpoint-replaced-first",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.step": "second",
+        "body.state.count": 2,
+        "body.sequence": 2
+      }
+    }
+  ]
+}

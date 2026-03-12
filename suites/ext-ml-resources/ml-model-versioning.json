@@ -1,13 +1,25 @@
 {
-  "name": "ml-model-versioning",
+  "test_id": "EXT-ML-003",
   "level": 4,
+  "category": "ext-ml-resources",
+  "name": "ml-model-versioning",
   "description": "Enqueue a job with model versioning metadata including provider, format, and checksum",
+  "spec_ref": "ojs-ml-extensions#section-6",
+  "tags": [
+    "extension",
+    "ml-resources",
+    "versioning"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "ml.inference",
-        "args": [{"prompt": "Classify this text"}],
+        "args": [
+          {
+            "prompt": "Classify this text"
+          }
+        ],
         "queue": "inference",
         "ext_ml_accelerator": "gpu",
         "ext_ml_gpu_type": "nvidia-l4",

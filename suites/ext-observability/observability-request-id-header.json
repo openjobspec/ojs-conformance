@@ -1,0 +1,32 @@
+{
+  "test_id": "EXT-OBS-005",
+  "level": "ext",
+  "category": "observability",
+  "name": "observability-request-id-header",
+  "description": "All API responses MUST include an X-Request-ID header for request tracing. If the client sends an X-Request-ID, the server MUST echo it back. If not provided, the server MUST generate one.",
+  "spec_ref": "ojs-observability#section-6",
+  "tags": ["ext", "observability", "request-id", "tracing"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "GET",
+      "intent": "request without X-Request-ID — server should generate one",
+      "path": "/health",
+      "assertions": {
+        "status": 200,
+        "headers": {"X-Request-ID": {"$exists": true}}
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "request with X-Request-ID — server should echo it",
+      "path": "/health",
+      "headers": {"X-Request-ID": "test-req-obs-12345"},
+      "assertions": {
+        "status": 200,
+        "headers": {"X-Request-ID": {"$eq": "test-req-obs-12345"}}
+      }
+    }
+  ]
+}

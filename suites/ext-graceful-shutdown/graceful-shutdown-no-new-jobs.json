@@ -1,0 +1,54 @@
+{
+  "test_id": "EXT-GS-003",
+  "level": 0,
+  "category": "ext-graceful-shutdown",
+  "name": "graceful-shutdown-no-new-jobs",
+  "description": "After a worker sends a drain heartbeat, fetch requests from that worker SHOULD return empty results (no new jobs assigned to draining workers).",
+  "spec_ref": "ojs-graceful-shutdown#section-3.2",
+  "tags": ["extension", "graceful-shutdown", "drain", "no-fetch"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue a job to ensure one is available",
+      "path": "/ojs/v1/jobs",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "type": "test.gs.nofetch",
+        "args": [{"n": 1}],
+        "options": {"queue": "gs-drain-test"}
+      },
+      "assertions": {"status": 201}
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "send drain heartbeat for worker",
+      "path": "/ojs/v1/workers/beat",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "worker_id": "test-worker-gs-drain",
+        "state": "drain",
+        "active_jobs": 0
+      },
+      "assertions": {"status": 200}
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "attempt fetch as draining worker — should return empty",
+      "path": "/ojs/v1/workers/fetch",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "queues": ["gs-drain-test"],
+        "count": 1,
+        "worker_id": "test-worker-gs-drain"
+      },
+      "assertions": {
+        "status": 200
+      }
+    }
+  ]
+}

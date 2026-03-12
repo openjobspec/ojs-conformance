@@ -1,0 +1,53 @@
+{
+  "test_id": "EXT-DUR-022",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-double-delete-idempotent",
+  "description": "Deleting a checkpoint that has already been deleted should be idempotent. The second delete should return 200 (or 404), never an error. This tests recovery from network retries that cause duplicate deletes.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "chaos", "idempotent", "retry-safe"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.double_delete",
+        "args": ["double-delete-test"],
+        "options": { "queue": "conformance-durable-dbldelete" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "save-checkpoint",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "data": "ephemeral" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "DELETE",
+      "intent": "first-delete",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "DELETE",
+      "intent": "second-delete-should-not-error",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": { "status_in": [200, 404] }
+    },
+    {
+      "id": "step-5",
+      "action": "GET",
+      "intent": "verify-gone",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": { "status": 404 }
+    }
+  ]
+}

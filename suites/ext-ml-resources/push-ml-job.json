@@ -1,13 +1,25 @@
 {
-  "name": "push-ml-job-with-resources",
+  "test_id": "EXT-ML-005",
   "level": 4,
+  "category": "ext-ml-resources",
+  "name": "push-ml-job-with-resources",
   "description": "Enqueue a job with ML resource requirements",
+  "spec_ref": "ojs-ml-extensions#section-4",
+  "tags": [
+    "extension",
+    "ml-resources",
+    "push"
+  ],
   "steps": [
     {
       "action": "push",
       "request": {
         "type": "ml.inference",
-        "args": [{"prompt": "Hello"}],
+        "args": [
+          {
+            "prompt": "Hello"
+          }
+        ],
         "queue": "gpu-workers",
         "ext_ml_accelerator": "gpu",
         "ext_ml_gpu_type": "a100",

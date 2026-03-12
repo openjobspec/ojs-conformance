@@ -1,0 +1,39 @@
+{
+  "test_id": "EXT-DUR-015",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-cancelled-job",
+  "description": "Saving a checkpoint for a cancelled job should fail with a conflict status. Cancellation is a terminal state.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "cancelled", "error-handling"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.cancel",
+        "args": ["cancel-checkpoint-test"],
+        "options": { "queue": "conformance-durable-cancel" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "DELETE",
+      "intent": "cancel-job",
+      "path": "/ojs/v1/jobs/${job_id}",
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "attempt-save-on-cancelled-job",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "should_not": "be_saved" } },
+      "expect": { "status": 409 }
+    }
+  ]
+}

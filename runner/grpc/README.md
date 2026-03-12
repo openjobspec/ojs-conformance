@@ -4,7 +4,7 @@ Runs the OJS conformance test suite against a gRPC endpoint.
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.24+
 - An OJS-conformant server running and accessible via gRPC
 
 ## Building

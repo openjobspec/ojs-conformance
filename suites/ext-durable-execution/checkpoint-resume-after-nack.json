@@ -1,0 +1,88 @@
+{
+  "test_id": "EXT-DUR-009",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-resume-after-nack",
+  "description": "After a job is nacked and retried, fetching it again should include the checkpoint state from the previous attempt, enabling resume from the last saved point.",
+  "spec_ref": "ojs-durable-execution#section-6",
+  "tags": ["extension", "durable-execution", "checkpoint", "resume", "retry"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.resume",
+        "args": ["resume-test"],
+        "options": {
+          "queue": "conformance-durable-resume",
+          "retry": { "max_attempts": 3, "initial_interval": "PT1S" }
+        }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/workers/fetch",
+      "body": { "queues": ["conformance-durable-resume"], "worker_id": "w-resume-1" },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "save-checkpoint-before-failure",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "rows_processed": 750, "total_rows": 2000, "last_cursor": "abc-750" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "intent": "nack-with-retryable-error",
+      "path": "/ojs/v1/workers/nack",
+      "body": {
+        "job_id": "${job_id}",
+        "worker_id": "w-resume-1",
+        "error": { "code": "transient_failure", "message": "Connection lost mid-processing", "retryable": true }
+      },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-5",
+      "action": "WAIT",
+      "duration_ms": 1500,
+      "description": "Wait for retry delay to pass"
+    },
+    {
+      "id": "step-6",
+      "action": "POST",
+      "intent": "fetch-retried-job",
+      "path": "/ojs/v1/workers/fetch",
+      "body": { "queues": ["conformance-durable-resume"], "worker_id": "w-resume-2" },
+      "expect": { "status": 200, "body.jobs[0].id": "${job_id}", "body.jobs[0].attempt": 2 }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "intent": "verify-checkpoint-persists-across-retries",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.rows_processed": 750,
+        "body.state.last_cursor": "abc-750"
+      }
+    },
+    {
+      "id": "step-8",
+      "action": "POST",
+      "intent": "ack-job",
+      "path": "/ojs/v1/workers/ack",
+      "body": { "job_id": "${job_id}", "worker_id": "w-resume-2" },
+      "expect": { "status": 200 }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "test_id": "EXT-MW-004",
+  "level": 0,
+  "category": "ext-middleware",
+  "name": "middleware-enqueue-transform",
+  "description": "Server-side enqueue middleware MAY transform job attributes before persistence. Enqueue a job and verify that the queue assignment or metadata reflects middleware processing.",
+  "spec_ref": "ojs-middleware#section-3.2",
+  "tags": ["extension", "middleware", "transform", "enqueue"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue job to test middleware transforms",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "test.middleware.transform",
+        "args": [{"data": "transform-test"}],
+        "options": {"queue": "conformance-middleware"}
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available",
+          "$.job.type": "test.middleware.transform"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "GET",
+      "intent": "retrieve and verify job was stored correctly after middleware",
+      "path": "/ojs/v1/jobs/{{steps.step-1.response.body.job.id}}",
+      "headers": {"Accept": "application/openjobspec+json"},
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.id": "{{steps.step-1.response.body.job.id}}",
+          "$.job.queue": "conformance-middleware",
+          "$.job.args[0].data": "transform-test"
+        }
+      }
+    }
+  ]
+}

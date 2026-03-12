@@ -1,0 +1,50 @@
+{
+  "test_id": "EXT-WHK-004",
+  "level": 0,
+  "category": "ext-webhooks",
+  "name": "webhooks-update-subscription",
+  "description": "PATCH /ojs/v1/webhooks/subscriptions/:id to update an existing webhook subscription's events or URL. Verify the server returns 200 with updated subscription details.",
+  "spec_ref": "ojs-webhooks#section-3.3",
+  "tags": ["extension", "webhooks", "update"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "create a subscription first",
+      "path": "/ojs/v1/webhooks/subscriptions",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "url": "https://example.com/webhooks/update-test",
+        "events": ["job.completed"],
+        "secret": "whk_test_update_001"
+      },
+      "assertions": {
+        "status": 201,
+        "body": {"$.subscription.id": {"$exists": true}}
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "PATCH",
+      "intent": "update the subscription events",
+      "path": "/ojs/v1/webhooks/subscriptions/{{steps.step-1.response.body.subscription.id}}",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "events": ["job.completed", "job.failed", "job.cancelled"]
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.subscription.id": "{{steps.step-1.response.body.subscription.id}}",
+          "$.subscription.events": {"$size": 3}
+        }
+      }
+    }
+  ]
+}

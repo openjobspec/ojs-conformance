@@ -1,0 +1,46 @@
+{
+  "test_id": "EXT-RL-004",
+  "level": "ext",
+  "category": "rate-limiting",
+  "name": "rate-limit-per-second-throttle",
+  "description": "When a per-second rate limit is configured, enqueuing beyond the limit MUST return 429 with a Retry-After header indicating when the next request can be made.",
+  "spec_ref": "ojs-rate-limiting#section-5.2",
+  "tags": ["ext", "rate-limiting", "per-second", "throttle"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue job with per-second rate limit",
+      "path": "/ojs/v1/jobs",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "type": "test.ratelimit.rps",
+        "args": [{"n": 1}],
+        "options": {
+          "queue": "rl-rps-test",
+          "rate_limit": {"key": "rl-rps-key", "rate": 1, "period": "second"}
+        }
+      },
+      "assertions": {"status": 201, "body": {"$.job.id": {"$exists": true}}}
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "immediately enqueue another job exceeding rate",
+      "path": "/ojs/v1/jobs",
+      "headers": {"Content-Type": "application/openjobspec+json"},
+      "body": {
+        "type": "test.ratelimit.rps",
+        "args": [{"n": 2}],
+        "options": {
+          "queue": "rl-rps-test",
+          "rate_limit": {"key": "rl-rps-key", "rate": 1, "period": "second"}
+        }
+      },
+      "assertions": {
+        "status_in": [201, 429],
+        "headers": {"X-RateLimit-Limit": {"$exists": true}}
+      }
+    }
+  ]
+}

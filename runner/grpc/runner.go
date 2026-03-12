@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/openjobspec/ojs-conformance/lib"
@@ -102,15 +103,10 @@ func runTest(tc lib.TestCase, client *OJSClient, rpcTimeout time.Duration, timin
 		}
 	}
 
-	// Run test steps
-	for _, step := range tc.Steps {
-		sr, failures := executeStep(step, client, rpcTimeout, stepResults, timingCfg)
-		stepResults[step.ID] = sr
-		result.StepResults = append(result.StepResults, *sr)
-		if len(failures) > 0 {
-			result.Failures = append(result.Failures, failures...)
-		}
-	}
+	// Run test steps (with parallel execution support)
+	allResults, allFailures := executeStepsWithParallel(tc.Steps, client, rpcTimeout, stepResults, timingCfg)
+	result.StepResults = append(result.StepResults, allResults...)
+	result.Failures = append(result.Failures, allFailures...)
 
 	// Run teardown steps
 	if tc.Teardown != nil {
@@ -127,6 +123,87 @@ func runTest(tc lib.TestCase, client *OJSClient, rpcTimeout time.Duration, timin
 		result.Status = "pass"
 	}
 	return result
+}
+
+// executeStepsWithParallel runs steps sequentially, except steps linked by
+// parallel_with which are executed concurrently via goroutines.
+func executeStepsWithParallel(steps []lib.Step, client *OJSClient, rpcTimeout time.Duration, stepResults map[string]*lib.StepResult, timingCfg lib.TimingConfig) ([]lib.StepResult, []lib.Failure) {
+	var allResults []lib.StepResult
+	var allFailures []lib.Failure
+
+	parallelGroups := make(map[string]bool)
+	for _, step := range steps {
+		if step.ParallelWith != "" {
+			parallelGroups[step.ID] = true
+			parallelGroups[step.ParallelWith] = true
+		}
+	}
+
+	var mu sync.Mutex
+	executed := make(map[string]bool)
+
+	for i, step := range steps {
+		if executed[step.ID] {
+			continue
+		}
+
+		if parallelGroups[step.ID] {
+			group := collectParallelGroup(steps[i:], step.ID, parallelGroups)
+			if len(group) > 1 {
+				type parallelResult struct {
+					stepID   string
+					result   *lib.StepResult
+					failures []lib.Failure
+				}
+				results := make([]parallelResult, len(group))
+				var wg sync.WaitGroup
+				for j, gs := range group {
+					wg.Add(1)
+					go func(idx int, s lib.Step) {
+						defer wg.Done()
+						sr, failures := executeStep(s, client, rpcTimeout, stepResults, timingCfg)
+						mu.Lock()
+						stepResults[s.ID] = sr
+						mu.Unlock()
+						results[idx] = parallelResult{stepID: s.ID, result: sr, failures: failures}
+					}(j, gs)
+				}
+				wg.Wait()
+
+				for _, pr := range results {
+					allResults = append(allResults, *pr.result)
+					allFailures = append(allFailures, pr.failures...)
+					executed[pr.stepID] = true
+				}
+				continue
+			}
+		}
+
+		sr, failures := executeStep(step, client, rpcTimeout, stepResults, timingCfg)
+		stepResults[step.ID] = sr
+		allResults = append(allResults, *sr)
+		allFailures = append(allFailures, failures...)
+		executed[step.ID] = true
+	}
+
+	return allResults, allFailures
+}
+
+// collectParallelGroup collects consecutive steps that belong to the same parallel group.
+func collectParallelGroup(steps []lib.Step, triggerID string, groups map[string]bool) []lib.Step {
+	var group []lib.Step
+	for _, s := range steps {
+		if groups[s.ID] {
+			group = append(group, s)
+		}
+		if s.ParallelWith == triggerID || s.ID == triggerID {
+			continue
+		}
+		if !groups[s.ID] {
+			break
+		}
+	}
+	return group
 }
 
 // executeStep runs a single gRPC step and evaluates its assertions.

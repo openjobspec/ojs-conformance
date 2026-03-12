@@ -1,0 +1,76 @@
+{
+  "test_id": "EXT-DUR-010",
+  "level": 0,
+  "category": "ext-durable-execution",
+  "name": "checkpoint-concurrent-saves",
+  "description": "Multiple rapid checkpoint saves for the same job should be serialized correctly. The last write wins and the sequence number reflects the total number of saves.",
+  "spec_ref": "ojs-durable-execution#section-4",
+  "tags": ["extension", "durable-execution", "checkpoint", "concurrency"],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "body": {
+        "type": "test.durable.concurrent",
+        "args": ["concurrent-save-test"],
+        "options": { "queue": "conformance-durable-concurrent" }
+      },
+      "expect": { "status": 201 },
+      "capture": { "job_id": "$.id" }
+    },
+    {
+      "id": "step-2",
+      "action": "PUT",
+      "intent": "rapid-save-1",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": 1, "data": "first" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-3",
+      "action": "PUT",
+      "intent": "rapid-save-2",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": 2, "data": "second" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-4",
+      "action": "PUT",
+      "intent": "rapid-save-3",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": 3, "data": "third" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-5",
+      "action": "PUT",
+      "intent": "rapid-save-4",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": 4, "data": "fourth" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-6",
+      "action": "PUT",
+      "intent": "rapid-save-5",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "body": { "state": { "step": 5, "data": "fifth" } },
+      "expect": { "status": 200 }
+    },
+    {
+      "id": "step-7",
+      "action": "GET",
+      "intent": "verify-final-state",
+      "path": "/ojs/v1/jobs/${job_id}/checkpoint",
+      "expect": {
+        "status": 200,
+        "body.state.step": 5,
+        "body.state.data": "fifth",
+        "body.sequence": 5
+      }
+    }
+  ]
+}
