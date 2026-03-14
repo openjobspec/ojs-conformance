@@ -44,7 +44,7 @@ func main() {
 		insecureConn bool
 	)
 
-	flag.StringVar(&grpcAddr, "url", "localhost:9090", "gRPC server address (host:port)")
+	flag.StringVar(&grpcAddr, "url", "", "gRPC server address (host:port)")
 	flag.StringVar(&suitesDir, "suites", "./suites", "Path to test suite directory")
 	flag.IntVar(&level, "level", -1, "Filter by conformance level (0-4), -1 for all")
 	flag.StringVar(&category, "category", "", "Filter by category (e.g., envelope, retry)")
@@ -57,6 +57,14 @@ func main() {
 	flag.BoolVar(&useTLS, "tls", false, "Use TLS for gRPC connection")
 	flag.BoolVar(&insecureConn, "insecure", false, "Skip TLS certificate verification (use with -tls)")
 	flag.Parse()
+
+	// Resolve gRPC address: flag > env var > default
+	if grpcAddr == "" {
+		grpcAddr = os.Getenv("OJS_TEST_URL")
+	}
+	if grpcAddr == "" {
+		grpcAddr = "localhost:9090"
+	}
 
 	// Connect to gRPC server
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

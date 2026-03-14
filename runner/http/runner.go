@@ -7,6 +7,9 @@
 //	ojs-conformance-runner -url http://localhost:8080 -suites ./suites -category retry
 //	ojs-conformance-runner -url http://localhost:8080 -suites ./suites -test L1-RET-001
 //	ojs-conformance-runner -url http://localhost:8080 -suites ./suites -output json
+//
+// The server URL can also be set via the OJS_TEST_URL environment variable.
+// The -url flag takes precedence over the environment variable.
 package main
 
 import (
@@ -52,7 +55,7 @@ func main() {
 		resetURL     string
 	)
 
-	flag.StringVar(&baseURL, "url", "http://localhost:8080", "Base URL of the OJS-conformant server")
+	flag.StringVar(&baseURL, "url", "", "Base URL of the OJS-conformant server")
 	flag.StringVar(&suitesDir, "suites", "./suites", "Path to test suite directory")
 	flag.IntVar(&level, "level", -1, "Filter by conformance level (0-4), -1 for all")
 	flag.StringVar(&category, "category", "", "Filter by category (e.g., envelope, retry)")
@@ -64,6 +67,14 @@ func main() {
 	flag.StringVar(&redisURL, "redis", "", "Redis URL for FLUSHDB between tests (e.g., redis://localhost:6379)")
 	flag.StringVar(&resetURL, "reset-url", "", "HTTP URL to POST for state reset between tests (e.g., http://localhost:8090/ojs/v1/admin/reset)")
 	flag.Parse()
+
+	// Resolve base URL: flag > env var > default
+	if baseURL == "" {
+		baseURL = os.Getenv("OJS_TEST_URL")
+	}
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
 
 	// Normalize base URL
 	baseURL = strings.TrimRight(baseURL, "/")
