@@ -1,0 +1,81 @@
+{
+  "test_id": "L4-ATT-003",
+  "level": 4,
+  "category": "attest",
+  "name": "Attestation policy enforcement",
+  "description": "Verify that attestation policy enforcement works. When a queue requires attestation but the job is submitted without it, the server must reject the job. When attestation is provided, the job is accepted.",
+  "spec_ref": "ojs-ext-attest.md#policy",
+  "tags": ["extension", "attest", "policy", "enforcement"],
+  "steps": [
+    {
+      "id": "s1",
+      "action": "PUT",
+      "intent": "configure queue with attestation policy",
+      "path": "/ojs/v1/queues/conformance-attest-policy",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "name": "conformance-attest-policy",
+        "attest_policy": {
+          "required": true,
+          "allowed_algorithms": ["ed25519", "hybrid:Ed25519+ML-DSA-65"]
+        }
+      },
+      "assertions": {
+        "status": [200, 201]
+      }
+    },
+    {
+      "id": "s2",
+      "action": "POST",
+      "intent": "submit job without attestation (should be rejected)",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "attest.policy-test",
+        "args": ["no-attest"],
+        "options": {
+          "queue": "conformance-attest-policy"
+        }
+      },
+      "assertions": {
+        "status": 422,
+        "body": {
+          "$.error": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "action": "POST",
+      "intent": "submit job with attestation (should be accepted)",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "attest.policy-test",
+        "args": ["with-attest"],
+        "options": {
+          "queue": "conformance-attest-policy"
+        },
+        "ext_attest": {
+          "enabled": true,
+          "algorithm": "ed25519"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "test_id": "L4-AGT-003",
+  "level": 4,
+  "category": "agent",
+  "name": "Agent merge",
+  "description": "Verify MERGE_AGENT operation. Enqueues an agent job, forks it into two branches, then merges them using the 'ours' strategy.",
+  "spec_ref": "ojs-ai-agents-v2.md#merge_agent",
+  "tags": ["extension", "ai-agents", "merge", "branching"],
+  "steps": [
+    {
+      "id": "s1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "agent.merge-test",
+        "args": ["merge-experiment"],
+        "options": {
+          "queue": "conformance-agent-merge"
+        },
+        "ext_agent_v2": {
+          "state": "running"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s2",
+      "action": "POST",
+      "intent": "fork branch A",
+      "path": "/ojs/v1/agents/{{steps.s1.response.body.job.id}}/fork",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "at_turn": 0,
+        "branch_name": "branch-a"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.branch_id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "action": "POST",
+      "intent": "fork branch B",
+      "path": "/ojs/v1/agents/{{steps.s1.response.body.job.id}}/fork",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "at_turn": 0,
+        "branch_name": "branch-b"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.branch_id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s4",
+      "action": "POST",
+      "intent": "merge",
+      "path": "/ojs/v1/agents/{{steps.s1.response.body.job.id}}/merge",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "branch_a": "{{steps.s2.response.body.branch_id}}",
+        "branch_b": "{{steps.s3.response.body.branch_id}}",
+        "strategy": "ours"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.merged_id": { "$exists": true },
+          "$.conflicts": { "$type": "array" }
+        }
+      }
+    }
+  ]
+}

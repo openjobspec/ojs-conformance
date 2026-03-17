@@ -53,6 +53,7 @@ func main() {
 		timeoutSec   int
 		redisURL     string
 		resetURL     string
+		reportFile   string
 	)
 
 	flag.StringVar(&baseURL, "url", "", "Base URL of the OJS-conformant server")
@@ -66,6 +67,7 @@ func main() {
 	flag.IntVar(&timeoutSec, "timeout", 30, "HTTP request timeout in seconds")
 	flag.StringVar(&redisURL, "redis", "", "Redis URL for FLUSHDB between tests (e.g., redis://localhost:6379)")
 	flag.StringVar(&resetURL, "reset-url", "", "HTTP URL to POST for state reset between tests (e.g., http://localhost:8090/ojs/v1/admin/reset)")
+	flag.StringVar(&reportFile, "report-file", "", "Write conformance report JSON to this file path (in addition to stdout output)")
 	flag.Parse()
 
 	// Resolve base URL: flag > env var > default
@@ -144,6 +146,15 @@ func main() {
 
 	// Build report
 	report := buildReport(results, baseURL, level, suiteDuration)
+
+	// Write report file if requested
+	if reportFile != "" {
+		if err := lib.WriteReportFile(reportFile, report); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing report file: %v\n", err)
+			os.Exit(2)
+		}
+		fmt.Fprintf(os.Stderr, "Report written to %s\n", reportFile)
+	}
 
 	// Output results
 	switch outputFormat {
@@ -703,11 +714,15 @@ func resolveMatcherTemplates(matcher json.RawMessage, stepResults map[string]*li
 // buildReport aggregates test results into a conformance report.
 func buildReport(results []lib.TestResult, target string, requestedLevel int, duration time.Duration) lib.SuiteReport {
 	report := lib.SuiteReport{
-		TestSuiteVersion: suiteVersion,
-		Target:           target,
-		RunAt:            time.Now().UTC().Format(time.RFC3339),
-		DurationMs:       duration.Milliseconds(),
-		RequestedLevel:   requestedLevel,
+		TestSuiteVersion:    suiteVersion,
+		ReportSchemaVersion: lib.SchemaVersionV11,
+		Target:              target,
+		RunAt:               time.Now().UTC().Format(time.RFC3339),
+		DurationMs:          duration.Milliseconds(),
+		RequestedLevel:      requestedLevel,
+		Commit:              lib.CaptureCommit(),
+		Environment:         lib.CaptureEnvironment(),
+		Backend:             &lib.BackendInfo{URL: target},
 		Results: lib.ResultsSummary{
 			Total:   len(results),
 			ByLevel: make(map[int]lib.LevelSummary),

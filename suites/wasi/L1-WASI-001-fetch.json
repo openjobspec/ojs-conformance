@@ -1,0 +1,71 @@
+{
+  "test_id": "L1-WASI-001",
+  "level": 1,
+  "category": "wasi",
+  "name": "wasi-worker-fetch",
+  "description": "A WASI host MUST be able to fetch a pending job from the OJS server via the HTTP binding. The host calls POST /ojs/v1/jobs/fetch with a queue filter and receives a job envelope.",
+  "spec_ref": "ojs-ext-runtime#section-2",
+  "tags": [
+    "level-1",
+    "wasi",
+    "fetch"
+  ],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "wasi.test.fetch",
+        "args": [
+          {
+            "action": "noop"
+          }
+        ],
+        "options": {
+          "queue": "wasi-test"
+        },
+        "meta": {
+          "ojs.ext_runtime": {
+            "name": "wasi:ojs",
+            "min": "0.1.0"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7",
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/jobs/fetch",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "queues": [
+          "wasi-test"
+        ],
+        "count": 1
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].type": "wasi.test.fetch",
+          "$.jobs[0].state": "active",
+          "$.jobs[0].meta[\"ojs.ext_runtime\"].name": "wasi:ojs"
+        }
+      }
+    }
+  ]
+}

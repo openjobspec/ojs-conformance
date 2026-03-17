@@ -1,0 +1,111 @@
+{
+  "test_id": "L1-WASI-003",
+  "level": 1,
+  "category": "wasi",
+  "name": "wasi-worker-ack",
+  "description": "A WASI host MUST acknowledge job completion or failure back to the OJS server. This test verifies that a fetched job can be acknowledged as completed and that a subsequent fetch does not return it again.",
+  "spec_ref": "ojs-ext-runtime#section-4",
+  "tags": [
+    "level-1",
+    "wasi",
+    "ack"
+  ],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "wasi.test.ack",
+        "args": [
+          {
+            "action": "succeed"
+          }
+        ],
+        "options": {
+          "queue": "wasi-ack-test"
+        },
+        "meta": {
+          "ojs.ext_runtime": {
+            "name": "wasi:ojs",
+            "min": "0.1.0"
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7"
+        }
+      },
+      "capture": {
+        "job_id": "$.job.id"
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch",
+      "path": "/ojs/v1/jobs/fetch",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "queues": [
+          "wasi-ack-test"
+        ],
+        "count": 1
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs[0].id": "${job_id}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "ack-complete",
+      "path": "/ojs/v1/jobs/${job_id}/ack",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "result": "completed"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.job.state": "completed"
+        }
+      }
+    },
+    {
+      "id": "step-4",
+      "action": "POST",
+      "intent": "fetch-empty",
+      "path": "/ojs/v1/jobs/fetch",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "queues": [
+          "wasi-ack-test"
+        ],
+        "count": 1
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.jobs": "array:empty"
+        }
+      }
+    }
+  ]
+}

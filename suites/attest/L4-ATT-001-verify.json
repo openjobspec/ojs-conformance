@@ -1,0 +1,73 @@
+{
+  "test_id": "L4-ATT-001",
+  "level": 4,
+  "category": "attest",
+  "name": "Attestation verify",
+  "description": "Verify that an attestation receipt produced by the server can be verified. Enqueues a job with attestation enabled, completes it, retrieves the receipt, and calls the verify endpoint.",
+  "spec_ref": "ojs-ext-attest.md#verify",
+  "tags": ["extension", "attest", "verify", "receipt"],
+  "steps": [
+    {
+      "id": "s1",
+      "action": "POST",
+      "intent": "enqueue with attestation",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "attest.verify-test",
+        "args": ["verify-me"],
+        "options": {
+          "queue": "conformance-attest-verify"
+        },
+        "ext_attest": {
+          "enabled": true,
+          "algorithm": "ed25519"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s2",
+      "action": "GET",
+      "intent": "retrieve receipt",
+      "path": "/ojs/v1/jobs/{{steps.s1.response.body.job.id}}/receipt",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.receipt.signature": { "$exists": true },
+          "$.receipt.quote": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "action": "POST",
+      "intent": "verify receipt",
+      "path": "/ojs/v1/attest/verify",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "receipt": "{{steps.s2.response.body.receipt}}"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.valid": true
+        }
+      }
+    }
+  ]
+}

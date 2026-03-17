@@ -1,0 +1,77 @@
+{
+  "test_id": "L4-AGT-001",
+  "level": 4,
+  "category": "agent",
+  "name": "Agent pause and resume",
+  "description": "Verify PAUSE_HUMAN and RESUME_HUMAN operations. Enqueues an agent job, pauses it with a reason, then resumes it with an approved decision.",
+  "spec_ref": "ojs-ai-agents-v2.md#pause_human",
+  "tags": ["extension", "ai-agents", "pause", "resume", "human-in-the-loop"],
+  "steps": [
+    {
+      "id": "s1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "agent.test",
+        "args": ["hello"],
+        "options": {
+          "queue": "conformance-agent-pause"
+        },
+        "ext_agent_v2": {
+          "state": "running"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "s2",
+      "action": "POST",
+      "intent": "pause",
+      "path": "/ojs/v1/agents/{{steps.s1.response.body.job.id}}/pause",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "reason": "test pause for human review"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "paused"
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "action": "POST",
+      "intent": "resume",
+      "path": "/ojs/v1/agents/{{steps.s1.response.body.job.id}}/resume",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "approved": true,
+        "comment": "looks good, proceed"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.state": "running"
+        }
+      }
+    }
+  ]
+}

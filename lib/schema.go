@@ -213,17 +213,71 @@ type Failure struct {
 }
 
 // SuiteReport is the top-level conformance report output.
+//
+// The schema is intentionally additive: new optional fields may appear in
+// future versions, but consumers that only read the original keys remain
+// correct. The ReportSchemaVersion field SHOULD be used by tooling that
+// requires the CTN-attestable fields (Environment, Commit, ReportSchemaVersion).
 type SuiteReport struct {
-	TestSuiteVersion string          `json:"test_suite_version"`
-	Target           string          `json:"target"`
-	RunAt            string          `json:"run_at"`
-	DurationMs       int64           `json:"duration_ms"`
-	RequestedLevel   int             `json:"requested_level"`
-	Results          ResultsSummary  `json:"results"`
-	Conformant       bool            `json:"conformant"`
-	ConformantLevel  int             `json:"conformant_level"`
-	Failures         []TestResult    `json:"failures,omitempty"`
-	Skipped          []TestResult    `json:"skipped,omitempty"`
+	// Original fields (v1.0 schema) — DO NOT REORDER.
+	TestSuiteVersion string         `json:"test_suite_version"`
+	Target           string         `json:"target"`
+	RunAt            string         `json:"run_at"`
+	DurationMs       int64          `json:"duration_ms"`
+	RequestedLevel   int            `json:"requested_level"`
+	Results          ResultsSummary `json:"results"`
+	Conformant       bool           `json:"conformant"`
+	ConformantLevel  int            `json:"conformant_level"`
+	Failures         []TestResult   `json:"failures,omitempty"`
+	Skipped          []TestResult   `json:"skipped,omitempty"`
+
+	// v1.1 — CTN attestation fields (Conformance Trust Network, moonshot M5).
+	// Optional, but REQUIRED when emitting reports intended for cryptographic
+	// signing and submission to a transparency log.
+	ReportSchemaVersion string             `json:"report_schema_version,omitempty"`
+	Commit              *CommitInfo        `json:"commit,omitempty"`
+	Environment         *EnvironmentInfo   `json:"environment,omitempty"`
+	Backend             *BackendInfo       `json:"backend,omitempty"`
+	Submitter           *SubmitterInfo     `json:"submitter,omitempty"`
+}
+
+// CommitInfo identifies the source revision the backend under test was built from.
+// This is the canonical anchor for "which version of code" produced this report.
+type CommitInfo struct {
+	SHA       string `json:"sha"`                  // full git commit SHA-1 or SHA-256
+	Branch    string `json:"branch,omitempty"`
+	Repo      string `json:"repo,omitempty"`       // e.g. "github.com/openjobspec/ojs-backend-redis"
+	Tag       string `json:"tag,omitempty"`
+	Dirty     bool   `json:"dirty,omitempty"`      // true if working tree had uncommitted changes
+	CommitTS  string `json:"commit_timestamp,omitempty"` // RFC 3339
+}
+
+// EnvironmentInfo describes the runtime environment of the conformance run.
+// Captured to allow auditors to reproduce or reason about the result later.
+type EnvironmentInfo struct {
+	OS           string            `json:"os"`            // e.g. "linux"
+	Arch         string            `json:"arch"`          // e.g. "amd64"
+	GoVersion    string            `json:"go_version,omitempty"`
+	Hostname     string            `json:"hostname,omitempty"`
+	CIProvider   string            `json:"ci_provider,omitempty"` // "github-actions", "buildkite", ""
+	CIRunURL     string            `json:"ci_run_url,omitempty"`
+	Tags         map[string]string `json:"tags,omitempty"`
+}
+
+// BackendInfo identifies the OJS backend that the conformance suite ran against.
+type BackendInfo struct {
+	Name    string `json:"name"`            // e.g. "ojs-backend-redis"
+	Version string `json:"version,omitempty"`
+	URL     string `json:"url,omitempty"`   // alias for Target, kept for clarity
+}
+
+// SubmitterInfo identifies the party submitting the report (for CTN attribution).
+// All fields are optional; --anonymous mode SHOULD strip every field except KeyID.
+type SubmitterInfo struct {
+	Org       string `json:"org,omitempty"`        // e.g. "Acme Corp"
+	Contact   string `json:"contact,omitempty"`    // email or URL
+	KeyID     string `json:"key_id,omitempty"`     // signing key identifier
+	Anonymous bool   `json:"anonymous,omitempty"`
 }
 
 // ResultsSummary contains aggregate test results.

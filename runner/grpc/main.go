@@ -42,6 +42,7 @@ func main() {
 		redisURL     string
 		useTLS       bool
 		insecureConn bool
+		reportFile   string
 	)
 
 	flag.StringVar(&grpcAddr, "url", "", "gRPC server address (host:port)")
@@ -56,6 +57,7 @@ func main() {
 	flag.StringVar(&redisURL, "redis", "", "Redis URL for FLUSHDB between tests (e.g., redis://localhost:6379)")
 	flag.BoolVar(&useTLS, "tls", false, "Use TLS for gRPC connection")
 	flag.BoolVar(&insecureConn, "insecure", false, "Skip TLS certificate verification (use with -tls)")
+	flag.StringVar(&reportFile, "report-file", "", "Write conformance report JSON to this file path (in addition to stdout output)")
 	flag.Parse()
 
 	// Resolve gRPC address: flag > env var > default
@@ -132,6 +134,15 @@ func main() {
 
 	// Build report
 	report := buildReport(results, "grpc://"+grpcAddr, level, suiteDuration)
+
+	// Write report file if requested
+	if reportFile != "" {
+		if err := lib.WriteReportFile(reportFile, report); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing report file: %v\n", err)
+			os.Exit(2)
+		}
+		fmt.Fprintf(os.Stderr, "Report written to %s\n", reportFile)
+	}
 
 	// Output results
 	switch outputFormat {

@@ -1,0 +1,114 @@
+{
+  "test_id": "L1-WASI-004",
+  "level": 1,
+  "category": "wasi",
+  "name": "wasi-capability-enforcement",
+  "description": "A WASI host MUST enforce capability bindings declared in ext_runtime. A job that requires an unsupported capability (e.g. 'gpu') MUST NOT be executed by a host that does not advertise it. The host MUST reject the job with a clear error rather than silently executing it without the capability.",
+  "spec_ref": "ojs-ext-runtime#section-5",
+  "tags": [
+    "level-1",
+    "wasi",
+    "capability",
+    "security"
+  ],
+  "steps": [
+    {
+      "id": "step-1",
+      "action": "POST",
+      "intent": "enqueue-with-tags",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "wasi.test.capability",
+        "args": [
+          {
+            "action": "require-gpu"
+          }
+        ],
+        "options": {
+          "queue": "wasi-cap-test"
+        },
+        "meta": {
+          "ojs.ext_runtime": {
+            "name": "wasi:ojs",
+            "min": "0.1.0",
+            "tags": [
+              "gpu"
+            ]
+          }
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": "string:uuidv7"
+        }
+      },
+      "capture": {
+        "job_id": "$.job.id"
+      }
+    },
+    {
+      "id": "step-2",
+      "action": "POST",
+      "intent": "fetch-with-runtime-filter",
+      "path": "/ojs/v1/jobs/fetch",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "queues": [
+          "wasi-cap-test"
+        ],
+        "count": 1,
+        "runtime": {
+          "name": "wasi:ojs",
+          "version": "0.1.0",
+          "tags": [
+            "http"
+          ]
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body_comment": "Worker without 'gpu' tag MUST NOT receive this job",
+        "body": {
+          "$.jobs": "array:empty"
+        }
+      }
+    },
+    {
+      "id": "step-3",
+      "action": "POST",
+      "intent": "fetch-with-matching-tags",
+      "path": "/ojs/v1/jobs/fetch",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "queues": [
+          "wasi-cap-test"
+        ],
+        "count": 1,
+        "runtime": {
+          "name": "wasi:ojs",
+          "version": "0.1.0",
+          "tags": [
+            "gpu",
+            "http"
+          ]
+        }
+      },
+      "assertions": {
+        "status": 200,
+        "body_comment": "Worker with 'gpu' tag MUST receive the job",
+        "body": {
+          "$.jobs[0].id": "${job_id}",
+          "$.jobs[0].state": "active"
+        }
+      }
+    }
+  ]
+}

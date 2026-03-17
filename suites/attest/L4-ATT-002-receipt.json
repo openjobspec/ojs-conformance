@@ -1,0 +1,59 @@
+{
+  "test_id": "L4-ATT-002",
+  "level": 4,
+  "category": "attest",
+  "name": "Attestation receipt schema",
+  "description": "Verify that attestation receipts conform to the expected schema. Checks that all required fields (job_id, quote, signature, issued_at) are present and well-typed.",
+  "spec_ref": "ojs-ext-attest.md#receipt-schema",
+  "tags": ["extension", "attest", "receipt", "schema-validation"],
+  "steps": [
+    {
+      "id": "s1",
+      "action": "POST",
+      "intent": "enqueue with attestation",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "attest.schema-test",
+        "args": ["schema-check"],
+        "options": {
+          "queue": "conformance-attest-schema"
+        },
+        "ext_attest": {
+          "enabled": true,
+          "algorithm": "ed25519"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true }
+        }
+      }
+    },
+    {
+      "id": "s2",
+      "action": "GET",
+      "intent": "retrieve receipt and validate schema",
+      "path": "/ojs/v1/jobs/{{steps.s1.response.body.job.id}}/receipt",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.receipt.job_id": { "$exists": true },
+          "$.receipt.quote.type": { "$type": "string" },
+          "$.receipt.quote.issued_at": { "$type": "string" },
+          "$.receipt.signature.algorithm": { "$type": "string" },
+          "$.receipt.signature.value": { "$type": "string" },
+          "$.receipt.signature.key_id": { "$type": "string" },
+          "$.receipt.issued_at": { "$type": "string" }
+        }
+      }
+    }
+  ]
+}

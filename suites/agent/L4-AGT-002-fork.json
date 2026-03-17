@@ -1,0 +1,59 @@
+{
+  "test_id": "L4-AGT-002",
+  "level": 4,
+  "category": "agent",
+  "name": "Agent fork",
+  "description": "Verify FORK_AGENT operation. Enqueues an agent job and forks it at a specific turn, producing a new branch with its own ID and content hash.",
+  "spec_ref": "ojs-ai-agents-v2.md#fork_agent",
+  "tags": ["extension", "ai-agents", "fork", "branching"],
+  "steps": [
+    {
+      "id": "s1",
+      "action": "POST",
+      "intent": "enqueue",
+      "path": "/ojs/v1/jobs",
+      "headers": {
+        "Content-Type": "application/openjobspec+json",
+        "Accept": "application/openjobspec+json"
+      },
+      "body": {
+        "type": "agent.fork-test",
+        "args": ["experiment"],
+        "options": {
+          "queue": "conformance-agent-fork"
+        },
+        "ext_agent_v2": {
+          "state": "running"
+        }
+      },
+      "assertions": {
+        "status": 201,
+        "body": {
+          "$.job.id": { "$exists": true },
+          "$.job.state": "available"
+        }
+      }
+    },
+    {
+      "id": "s2",
+      "action": "POST",
+      "intent": "fork",
+      "path": "/ojs/v1/agents/{{steps.s1.response.body.job.id}}/fork",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "body": {
+        "at_turn": 0,
+        "branch_name": "experiment-a"
+      },
+      "assertions": {
+        "status": 200,
+        "body": {
+          "$.branch_id": { "$exists": true },
+          "$.content_id": { "$exists": true }
+        }
+      }
+    }
+  ]
+}

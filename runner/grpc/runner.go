@@ -546,14 +546,18 @@ func resolveMatcherTemplates(matcher json.RawMessage, stepResults map[string]*li
 func buildReport(results []lib.TestResult, target string, requestedLevel int, duration time.Duration) lib.SuiteReport {
 	summary := lib.ResultsSummary{ByLevel: map[int]lib.LevelSummary{}}
 	report := lib.SuiteReport{
-		TestSuiteVersion: suiteVersion,
-		Target:           target,
-		RunAt:            time.Now().UTC().Format(time.RFC3339),
-		DurationMs:       duration.Milliseconds(),
-		RequestedLevel:   requestedLevel,
-		Results:          summary,
-		Conformant:       false,
-		ConformantLevel:  -1,
+		TestSuiteVersion:    suiteVersion,
+		ReportSchemaVersion: lib.SchemaVersionV11,
+		Target:              target,
+		RunAt:               time.Now().UTC().Format(time.RFC3339),
+		DurationMs:          duration.Milliseconds(),
+		RequestedLevel:      requestedLevel,
+		Commit:              lib.CaptureCommit(),
+		Environment:         lib.CaptureEnvironment(),
+		Backend:             &lib.BackendInfo{URL: target},
+		Results:             summary,
+		Conformant:          false,
+		ConformantLevel:     -1,
 	}
 
 	for _, tr := range results {
