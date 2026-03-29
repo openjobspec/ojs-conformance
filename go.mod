@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/openjobspec/ojs-proto v0.0.0
-	github.com/redis/go-redis/v9 v9.17.3
+	github.com/redis/go-redis/v9 v9.18.0
 	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 )
@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
