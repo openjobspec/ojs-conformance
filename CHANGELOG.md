@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-20
+
 ### Added
 - Conformance test suites organized by level (0–4) and extension
 - Level 0 (Core): Job envelope validation, basic CRUD operations, lifecycle transitions
